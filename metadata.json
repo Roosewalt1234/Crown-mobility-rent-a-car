@@ -1,0 +1,7 @@
+{
+  "name": "Crown Mobility Rent A Car",
+  "description": "Premium car rental service in the UAE offering luxury, sports, and economy vehicles with an interactive AI assistant.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
