@@ -1,7 +1,7 @@
 import React from 'react';
 import { Share2, Heart, MapPin, Check, Phone, MessageCircle, Calendar, Shield, Settings, ArrowRight } from 'lucide-react';
 import { Car } from '../types';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 
 interface CarCardProps {
   car: Car;

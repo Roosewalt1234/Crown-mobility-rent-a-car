@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageSquare, X, Send, Mic, MicOff, Volume2, VolumeX, Bot, Headset } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { chatWithAI } from '../services/geminiService';
 import { Message } from '../types';
 import ReactMarkdown from 'react-markdown';

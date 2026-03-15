@@ -8,7 +8,7 @@ import { Chatbot } from './components/Chatbot';
 import { Footer } from './components/Footer';
 import { CARS } from './constants';
 import { Shield, Clock, CreditCard, Award } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 
 export default function App() {
   return (

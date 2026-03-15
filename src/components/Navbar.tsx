@@ -1,6 +1,6 @@
 import React from 'react';
 import { Menu, X, Phone, User } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = React.useState(false);
