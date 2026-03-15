@@ -3,9 +3,19 @@ export interface Car {
   name: string;
   brand: string;
   type: 'Luxury' | 'Sports' | 'SUV' | 'Economy';
-  pricePerDay: number;
   image: string;
-  features: string[];
+  description?: string;
+  location?: string;
+  year?: number;
+  region?: string;
+  pricing: {
+    day: { original: number; current: number };
+    week: { original: number; current: number };
+    month: { original: number; current: number };
+  };
+  mileageLimit?: number;
+  additionalMileageCharge?: number;
+  includedFeatures?: string[];
   specs: {
     passengers: number;
     transmission: string;

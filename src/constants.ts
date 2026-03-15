@@ -14,62 +14,122 @@ export const CATEGORIES: Category[] = [
 export const CARS: Car[] = [
   {
     id: '1',
-    name: 'Rolls Royce Cullinan',
-    brand: 'Rolls Royce',
-    type: 'Luxury',
-    pricePerDay: 5000,
+    name: 'GMC Yukon 2025',
+    brand: 'GMC',
+    type: 'SUV',
     image: 'https://images.unsplash.com/photo-1631214524020-5e18410f542f?auto=format&fit=crop&q=80&w=800',
-    features: ['Chauffeur available', 'Massage seats', 'Starlight headliner'],
-    specs: { passengers: 5, transmission: 'Automatic', fuel: 'Petrol' }
+    description: 'Dubai Rental: White SUV, 7 Seater, Bold Exterior Design, Large Touchscreen, Premium Leather Seats, Advanced Safety System',
+    location: 'Al Quoz, Dubai',
+    year: 2025,
+    region: 'GCC',
+    pricing: {
+      day: { original: 800, current: 475 },
+      week: { original: 4500, current: 3000 },
+      month: { original: 14000, current: 10000 }
+    },
+    mileageLimit: 250,
+    additionalMileageCharge: 3,
+    includedFeatures: ['1 day rental available', 'Insurance included', 'Free delivery'],
+    specs: { passengers: 7, transmission: 'Automatic', fuel: 'Petrol' }
   },
   {
     id: '2',
-    name: 'Lamborghini Huracan',
-    brand: 'Lamborghini',
-    type: 'Sports',
-    pricePerDay: 3500,
-    image: 'https://images.unsplash.com/photo-1525609004556-c46c7d6cf0a3?auto=format&fit=crop&q=80&w=800',
-    features: ['V10 Engine', 'Convertible', 'Track mode'],
-    specs: { passengers: 2, transmission: 'Automatic', fuel: 'Petrol' }
-  },
-  {
-    id: '3',
-    name: 'Mercedes G63 AMG',
-    brand: 'Mercedes',
-    type: 'SUV',
-    pricePerDay: 2500,
-    image: 'https://images.unsplash.com/photo-1520031441872-265e4ff70366?auto=format&fit=crop&q=80&w=800',
-    features: ['Off-road capability', 'Premium Audio', 'Sunroof'],
+    name: 'Rolls Royce Cullinan',
+    brand: 'Rolls Royce',
+    type: 'Luxury',
+    image: 'https://images.unsplash.com/photo-1631214524020-5e18410f542f?auto=format&fit=crop&q=80&w=800',
+    description: 'The pinnacle of luxury SUVs. Experience unmatched comfort and prestige on the roads of Dubai.',
+    location: 'Downtown, Dubai',
+    year: 2024,
+    region: 'GCC',
+    pricing: {
+      day: { original: 6000, current: 5000 },
+      week: { original: 35000, current: 30000 },
+      month: { original: 120000, current: 100000 }
+    },
+    mileageLimit: 200,
+    additionalMileageCharge: 15,
+    includedFeatures: ['Chauffeur available', 'Massage seats', 'Starlight headliner'],
     specs: { passengers: 5, transmission: 'Automatic', fuel: 'Petrol' }
   },
   {
-    id: '4',
-    name: 'Ferrari F8 Tributo',
-    brand: 'Ferrari',
+    id: '3',
+    name: 'Lamborghini Huracan',
+    brand: 'Lamborghini',
     type: 'Sports',
-    pricePerDay: 4000,
-    image: 'https://images.unsplash.com/photo-1592198084033-aade902d1aae?auto=format&fit=crop&q=80&w=800',
-    features: ['Turbocharged V8', 'Carbon Fiber Interior', 'Launch Control'],
+    image: 'https://images.unsplash.com/photo-1525609004556-c46c7d6cf0a3?auto=format&fit=crop&q=80&w=800',
+    description: 'Unleash the power of the V10. A masterpiece of Italian engineering and performance.',
+    location: 'Marina, Dubai',
+    year: 2024,
+    region: 'GCC',
+    pricing: {
+      day: { original: 4500, current: 3500 },
+      week: { original: 28000, current: 22000 },
+      month: { original: 90000, current: 75000 }
+    },
+    mileageLimit: 250,
+    additionalMileageCharge: 10,
+    includedFeatures: ['V10 Engine', 'Convertible', 'Track mode'],
     specs: { passengers: 2, transmission: 'Automatic', fuel: 'Petrol' }
   },
   {
+    id: '4',
+    name: 'Mercedes G63 AMG',
+    brand: 'Mercedes',
+    type: 'SUV',
+    image: 'https://images.unsplash.com/photo-1520031441872-265e4ff70366?auto=format&fit=crop&q=80&w=800',
+    description: 'The iconic G-Wagon. Combining off-road prowess with ultimate luxury and status.',
+    location: 'Jumeirah, Dubai',
+    year: 2024,
+    region: 'GCC',
+    pricing: {
+      day: { original: 3500, current: 2500 },
+      week: { original: 20000, current: 15000 },
+      month: { original: 70000, current: 55000 }
+    },
+    mileageLimit: 250,
+    additionalMileageCharge: 5,
+    includedFeatures: ['Off-road capability', 'Premium Audio', 'Sunroof'],
+    specs: { passengers: 5, transmission: 'Automatic', fuel: 'Petrol' }
+  },
+  {
     id: '5',
-    name: 'Range Rover Vogue',
-    brand: 'Land Rover',
-    type: 'Luxury',
-    pricePerDay: 1800,
-    image: 'https://images.unsplash.com/photo-1606611013016-969c19ba27bb?auto=format&fit=crop&q=80&w=800',
-    features: ['Air Suspension', 'Panoramic Roof', 'Cooler Box'],
-    specs: { passengers: 5, transmission: 'Automatic', fuel: 'Diesel' }
+    name: 'Ferrari F8 Tributo',
+    brand: 'Ferrari',
+    type: 'Sports',
+    image: 'https://images.unsplash.com/photo-1592198084033-aade902d1aae?auto=format&fit=crop&q=80&w=800',
+    description: 'Turbocharged V8, Carbon Fiber Interior, Launch Control. Experience the thrill of Maranello.',
+    location: 'Palm Jumeirah, Dubai',
+    year: 2024,
+    region: 'GCC',
+    pricing: {
+      day: { original: 5500, current: 4000 },
+      week: { original: 35000, current: 28000 },
+      month: { original: 120000, current: 95000 }
+    },
+    mileageLimit: 200,
+    additionalMileageCharge: 20,
+    includedFeatures: ['Turbocharged V8', 'Carbon Fiber Interior', 'Launch Control'],
+    specs: { passengers: 2, transmission: 'Automatic', fuel: 'Petrol' }
   },
   {
     id: '6',
-    name: 'Tesla Model S Plaid',
-    brand: 'Tesla',
+    name: 'Range Rover Vogue',
+    brand: 'Land Rover',
     type: 'Luxury',
-    pricePerDay: 1200,
-    image: 'https://images.unsplash.com/photo-1617788138017-80ad40651399?auto=format&fit=crop&q=80&w=800',
-    features: ['Autopilot', 'Ludicrous Mode', 'Silent Drive'],
-    specs: { passengers: 5, transmission: 'Automatic', fuel: 'Electric' }
+    image: 'https://images.unsplash.com/photo-1606611013016-969c19ba27bb?auto=format&fit=crop&q=80&w=800',
+    description: 'Air Suspension, Panoramic Roof, Cooler Box. The ultimate luxury SUV for any terrain.',
+    location: 'Business Bay, Dubai',
+    year: 2024,
+    region: 'GCC',
+    pricing: {
+      day: { original: 2500, current: 1800 },
+      week: { original: 15000, current: 12000 },
+      month: { original: 50000, current: 40000 }
+    },
+    mileageLimit: 250,
+    additionalMileageCharge: 5,
+    includedFeatures: ['Air Suspension', 'Panoramic Roof', 'Cooler Box'],
+    specs: { passengers: 5, transmission: 'Automatic', fuel: 'Diesel' }
   }
 ];
