@@ -18,6 +18,20 @@ async function startServer() {
   const isProduction = process.env.NODE_ENV === "production";
   const port = process.env.PORT || 3000;
   
+  // Redirect HTTP to HTTPS in production
+  if (isProduction) {
+    app.use((req, res, next) => {
+      if (req.headers['x-forwarded-proto'] !== 'https') {
+        return res.redirect(`https://${req.headers.host}${req.url}`);
+      }
+      next();
+    });
+  }
+
+  app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', message: 'Crescent Mobility API is active' });
+  });
+
   console.log(`Starting server. NODE_ENV: ${process.env.NODE_ENV}, Port: ${port}`);
   
   if (!isProduction) {
