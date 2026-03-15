@@ -9,6 +9,12 @@ const __dirname = path.dirname(__filename);
 
 async function startServer() {
   const app = express();
+  
+  app.use((req, res, next) => {
+    console.log(`${req.method} ${req.url}`);
+    next();
+  });
+
   const isProduction = process.env.NODE_ENV === "production";
   const port = process.env.PORT || 3000;
   

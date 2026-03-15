@@ -10,129 +10,168 @@ import { CARS } from './constants';
 import { Shield, Clock, CreditCard, Award } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("ErrorBoundary caught an error", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-black text-white flex items-center justify-center p-8">
+          <div className="max-w-md w-full bg-zinc-900 p-8 rounded-2xl border border-red-500/50">
+            <h2 className="text-2xl font-serif text-red-500 mb-4">Something went wrong</h2>
+            <p className="text-zinc-400 mb-6">{this.state.error?.message}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="w-full py-3 bg-[#D4AF37] text-black font-bold rounded-xl"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 export default function App() {
+  console.log('App component is rendering...');
   return (
-    <div className="min-h-screen bg-black text-white selection:bg-[#D4AF37] selection:text-black">
-      <Navbar />
-      
-      <main>
-        <Hero />
-        <WavyTransition />
-        <CategorySection />
+    <ErrorBoundary>
+      <div className="min-h-screen bg-black text-white selection:bg-[#D4AF37] selection:text-black">
+        <Navbar />
+        
+        <main>
+          <Hero />
+          <WavyTransition />
+          <CategorySection />
 
-        {/* Featured Cars Section */}
-        <section className="py-24 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
-              <div className="space-y-4">
-                <p className="text-[#D4AF37] text-sm uppercase tracking-[0.3em] font-bold">Exclusive Selection</p>
-                <h2 className="text-4xl md:text-5xl font-serif text-black">Featured Luxury Cars</h2>
+          {/* Featured Cars Section */}
+          <section className="py-24 bg-white">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
+                <div className="space-y-4">
+                  <p className="text-[#D4AF37] text-sm uppercase tracking-[0.3em] font-bold">Exclusive Selection</p>
+                  <h2 className="text-4xl md:text-5xl font-serif text-black">Featured Luxury Cars</h2>
+                </div>
+                <button className="text-[#D4AF37] border-b border-[#D4AF37]/30 pb-1 hover:border-[#D4AF37] transition-all uppercase tracking-widest text-xs font-bold">
+                  View All Vehicles
+                </button>
               </div>
-              <button className="text-[#D4AF37] border-b border-[#D4AF37]/30 pb-1 hover:border-[#D4AF37] transition-all uppercase tracking-widest text-xs font-bold">
-                View All Vehicles
-              </button>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {CARS.slice(0, 6).map((car) => (
+                  <CarCard key={car.id} car={car} />
+                ))}
+              </div>
             </div>
+          </section>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {CARS.slice(0, 6).map((car) => (
-                <CarCard key={car.id} car={car} />
-              ))}
-            </div>
-          </div>
-        </section>
+          <WavyTransition inverted />
 
-        <WavyTransition inverted />
-
-        {/* Why Choose Us Section */}
-        <section className="py-24 bg-black relative overflow-hidden">
-          {/* Decorative Elements */}
-          <div className="absolute top-0 right-0 w-1/2 h-full bg-[#D4AF37]/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2" />
-          
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div className="text-center max-w-3xl mx-auto mb-20 space-y-4">
-              <p className="text-[#D4AF37] text-sm uppercase tracking-[0.3em] font-bold">The Crown Standard</p>
-              <h2 className="text-4xl md:text-5xl font-serif text-white">Why Rent With Us?</h2>
-              <p className="text-white/50 text-lg font-light">
-                We don't just rent cars; we provide an unparalleled luxury experience tailored to your lifestyle.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
-              {[
-                {
-                  icon: Shield,
-                  title: 'Fully Insured',
-                  desc: 'Comprehensive insurance coverage for total peace of mind on every journey.'
-                },
-                {
-                  icon: Clock,
-                  title: '24/7 Support',
-                  desc: 'Our dedicated concierge team is available around the clock to assist you.'
-                },
-                {
-                  icon: CreditCard,
-                  title: 'Flexible Payment',
-                  desc: 'Multiple payment options including crypto and international credit cards.'
-                },
-                {
-                  icon: Award,
-                  title: 'Best Price',
-                  desc: 'Premium quality at competitive rates with no hidden charges.'
-                }
-              ].map((item, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                  viewport={{ once: true }}
-                  className="text-center space-y-6"
-                >
-                  <div className="w-16 h-16 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center mx-auto group hover:border-[#D4AF37]/50 transition-all">
-                    <item.icon className="text-[#D4AF37] transition-transform group-hover:scale-110" size={32} />
-                  </div>
-                  <h3 className="text-xl font-serif text-white">{item.title}</h3>
-                  <p className="text-white/40 text-sm leading-relaxed">{item.desc}</p>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* CTA Section */}
-        <section className="py-24 bg-black">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="relative rounded-[3rem] overflow-hidden">
-              <img 
-                src="https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&q=80&w=1920" 
-                alt="Luxury Car" 
-                className="absolute inset-0 w-full h-full object-cover"
-                referrerPolicy="no-referrer"
-              />
-              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-              <div className="relative z-10 px-8 py-20 md:p-24 text-center space-y-8">
-                <h2 className="text-4xl md:text-6xl font-serif text-white max-w-4xl mx-auto leading-tight">
-                  Ready to Experience <span className="text-[#D4AF37]">Pure Luxury</span>?
-                </h2>
-                <p className="text-white/70 text-lg max-w-2xl mx-auto font-light">
-                  Book your dream car today and enjoy exclusive benefits and 24/7 VIP support.
+          {/* Why Choose Us Section */}
+          <section className="py-24 bg-black relative overflow-hidden">
+            {/* Decorative Elements */}
+            <div className="absolute top-0 right-0 w-1/2 h-full bg-[#D4AF37]/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2" />
+            
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+              <div className="text-center max-w-3xl mx-auto mb-20 space-y-4">
+                <p className="text-[#D4AF37] text-sm uppercase tracking-[0.3em] font-bold">The Crown Standard</p>
+                <h2 className="text-4xl md:text-5xl font-serif text-white">Why Rent With Us?</h2>
+                <p className="text-white/50 text-lg font-light">
+                  We don't just rent cars; we provide an unparalleled luxury experience tailored to your lifestyle.
                 </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-                  <button className="px-10 py-4 bg-[#D4AF37] text-black font-bold rounded-full hover:bg-[#B8962E] transition-all active:scale-95 text-sm uppercase tracking-widest">
-                    Book Now
-                  </button>
-                  <button className="px-10 py-4 bg-white/10 backdrop-blur-md text-white border border-white/20 font-bold rounded-full hover:bg-white/20 transition-all active:scale-95 text-sm uppercase tracking-widest">
-                    Contact Sales
-                  </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+                {[
+                  {
+                    icon: Shield,
+                    title: 'Fully Insured',
+                    desc: 'Comprehensive insurance coverage for total peace of mind on every journey.'
+                  },
+                  {
+                    icon: Clock,
+                    title: '24/7 Support',
+                    desc: 'Our dedicated concierge team is available around the clock to assist you.'
+                  },
+                  {
+                    icon: CreditCard,
+                    title: 'Flexible Payment',
+                    desc: 'Multiple payment options including crypto and international credit cards.'
+                  },
+                  {
+                    icon: Award,
+                    title: 'Best Price',
+                    desc: 'Premium quality at competitive rates with no hidden charges.'
+                  }
+                ].map((item, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    viewport={{ once: true }}
+                    className="text-center space-y-6"
+                  >
+                    <div className="w-16 h-16 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center mx-auto group hover:border-[#D4AF37]/50 transition-all">
+                      <item.icon className="text-[#D4AF37] transition-transform group-hover:scale-110" size={32} />
+                    </div>
+                    <h3 className="text-xl font-serif text-white">{item.title}</h3>
+                    <p className="text-white/40 text-sm leading-relaxed">{item.desc}</p>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* CTA Section */}
+          <section className="py-24 bg-black">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="relative rounded-[3rem] overflow-hidden">
+                <img 
+                  src="https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&q=80&w=1920" 
+                  alt="Luxury Car" 
+                  className="absolute inset-0 w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+                <div className="relative z-10 px-8 py-20 md:p-24 text-center space-y-8">
+                  <h2 className="text-4xl md:text-6xl font-serif text-white max-w-4xl mx-auto leading-tight">
+                    Ready to Experience <span className="text-[#D4AF37]">Pure Luxury</span>?
+                  </h2>
+                  <p className="text-white/70 text-lg max-w-2xl mx-auto font-light">
+                    Book your dream car today and enjoy exclusive benefits and 24/7 VIP support.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+                    <button className="px-10 py-4 bg-[#D4AF37] text-black font-bold rounded-full hover:bg-[#B8962E] transition-all active:scale-95 text-sm uppercase tracking-widest">
+                      Book Now
+                    </button>
+                    <button className="px-10 py-4 bg-white/10 backdrop-blur-md text-white border border-white/20 font-bold rounded-full hover:bg-white/20 transition-all active:scale-95 text-sm uppercase tracking-widest">
+                      Contact Sales
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </section>
-      </main>
+          </section>
+        </main>
 
-      <Footer />
-      <Chatbot />
-    </div>
+        <Footer />
+        <Chatbot />
+      </div>
+    </ErrorBoundary>
   );
 }
