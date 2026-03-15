@@ -11,8 +11,8 @@ export const Navbar = () => {
         <div className="flex justify-between items-center h-28">
           <div className="flex items-center gap-3">
             <img 
-              src="https://bxjuphdnzhidzlcctubl.supabase.co/storage/v1/object/public/tenant-logos/crown%20mobility%20rent%20a%20car.png" 
-              alt="Crown Mobility Logo" 
+              src="https://dzgyxvsewaxnztglnkrh.supabase.co/storage/v1/object/sign/general/crescent-mobility-logo.jpeg?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV85ZGFiZDU3Ny0wYTAyLTQyZjktYjcwMy01ZmQ0ZWYyN2U1YjMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJnZW5lcmFsL2NyZXNjZW50LW1vYmlsaXR5LWxvZ28uanBlZyIsImlhdCI6MTc3MzU1NDQ0NywiZXhwIjoxODA1MDkwNDQ3fQ.TuloT-1wrOmUdTGNA3WTD6xQF0EnExe_ItYvutqB4lc" 
+              alt="Crescent Mobility Logo" 
               className="h-24 w-auto object-contain"
               referrerPolicy="no-referrer"
               onError={(e) => {

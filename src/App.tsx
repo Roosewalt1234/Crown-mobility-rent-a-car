@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
+import { WavyTransition } from './components/WavyTransition';
 import { CategorySection } from './components/CategorySection';
 import { CarCard } from './components/CarCard';
 import { Chatbot } from './components/Chatbot';
@@ -16,16 +17,16 @@ export default function App() {
       
       <main>
         <Hero />
-        
+        <WavyTransition />
         <CategorySection />
 
         {/* Featured Cars Section */}
-        <section className="py-24 bg-[#080808]">
+        <section className="py-24 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
               <div className="space-y-4">
                 <p className="text-[#D4AF37] text-sm uppercase tracking-[0.3em] font-bold">Exclusive Selection</p>
-                <h2 className="text-4xl md:text-5xl font-serif text-white">Featured Luxury Cars</h2>
+                <h2 className="text-4xl md:text-5xl font-serif text-black">Featured Luxury Cars</h2>
               </div>
               <button className="text-[#D4AF37] border-b border-[#D4AF37]/30 pb-1 hover:border-[#D4AF37] transition-all uppercase tracking-widest text-xs font-bold">
                 View All Vehicles
@@ -39,6 +40,8 @@ export default function App() {
             </div>
           </div>
         </section>
+
+        <WavyTransition inverted />
 
         {/* Why Choose Us Section */}
         <section className="py-24 bg-black relative overflow-hidden">

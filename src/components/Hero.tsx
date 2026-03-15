@@ -12,7 +12,7 @@ export const Hero = () => {
           backgroundImage: 'url("https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=1920")',
         }}
       >
-        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/40 to-black/90" />
+        <div className="absolute inset-0 bg-black/50" />
       </div>
 
       {/* Content */}
@@ -23,10 +23,10 @@ export const Hero = () => {
           transition={{ duration: 0.8 }}
           className="space-y-6"
         >
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-serif text-white leading-tight">
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-serif text-white leading-tight drop-shadow-2xl">
             Drive the <span className="text-[#D4AF37] italic">Extraordinary</span>
           </h1>
-          <p className="text-xl md:text-2xl text-white/70 max-w-2xl mx-auto font-light tracking-wide">
+          <p className="text-xl md:text-2xl text-white/90 max-w-2xl mx-auto font-light tracking-wide drop-shadow-lg">
             Experience the pinnacle of luxury and performance in the heart of the UAE.
           </p>
         </motion.div>
@@ -36,7 +36,7 @@ export const Hero = () => {
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="mt-12 w-full max-w-5xl bg-white/10 backdrop-blur-xl p-4 rounded-2xl border border-white/20 shadow-2xl"
+          className="mt-12 w-full max-w-5xl bg-black/20 backdrop-blur-xl p-4 rounded-2xl border border-white/20 shadow-2xl"
         >
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="flex items-center gap-3 bg-white/5 p-4 rounded-xl border border-white/10">
@@ -89,7 +89,7 @@ export const Hero = () => {
           ].map((stat, i) => (
             <div key={i} className="text-center">
               <p className="text-2xl md:text-3xl font-serif text-[#D4AF37]">{stat.value}</p>
-              <p className="text-[10px] uppercase tracking-widest text-white/50 mt-1">{stat.label}</p>
+              <p className="text-[10px] uppercase tracking-widest text-white/40 mt-1 font-bold">{stat.label}</p>
             </div>
           ))}
         </div>

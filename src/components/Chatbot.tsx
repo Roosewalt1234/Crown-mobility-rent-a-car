@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageSquare, X, Send, Mic, MicOff, Volume2, VolumeX, Bot } from 'lucide-react';
+import { MessageSquare, X, Send, Mic, MicOff, Volume2, VolumeX, Bot, Headset } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { chatWithAI } from '../services/geminiService';
 import { Message } from '../types';
@@ -8,7 +8,7 @@ import ReactMarkdown from 'react-markdown';
 export const Chatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'model', text: 'Welcome to Crown Mobility. How can I assist you with your luxury car rental today?' }
+    { role: 'model', text: "Hello! I'm Nathasha, your personal Crescent concierge. How can I assist you with your luxury car rental today?" }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -105,12 +105,17 @@ export const Chatbot = () => {
             {/* Header */}
             <div className="p-6 bg-gradient-to-r from-black to-[#1a1a1a] border-b border-white/10 flex justify-between items-center">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#D4AF37] rounded-full flex items-center justify-center">
-                  <Bot size={20} className="text-black" />
+                <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-[#D4AF37] flex items-center justify-center bg-[#D4AF37]/10">
+                  <img 
+                    src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&q=80&w=100" 
+                    alt="Nathasha"
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
                 </div>
                 <div>
-                  <h3 className="text-white font-serif text-sm font-bold">Crown Concierge</h3>
-                  <p className="text-[10px] text-[#D4AF37] uppercase tracking-widest">AI Assistant</p>
+                  <h3 className="text-white font-serif text-sm font-bold">Nathasha</h3>
+                  <p className="text-[10px] text-[#D4AF37] uppercase tracking-widest">Crescent Concierge</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -192,12 +197,12 @@ export const Chatbot = () => {
         onClick={() => setIsOpen(!isOpen)}
         className="w-16 h-16 bg-[#D4AF37] rounded-full flex items-center justify-center shadow-2xl shadow-[#D4AF37]/20 relative group"
       >
-        {isOpen ? <X className="text-black" /> : <MessageSquare className="text-black" />}
+        {isOpen ? <X className="text-black" /> : <Headset className="text-black" />}
         {!isOpen && (
           <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-black" />
         )}
         <div className="absolute right-20 bg-black/80 backdrop-blur-md text-white text-xs px-4 py-2 rounded-full border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-          Chat with Crown Concierge
+          Chat with Nathasha
         </div>
       </motion.button>
     </div>

@@ -9,8 +9,8 @@ export const Footer = () => {
           <div className="space-y-6">
             <div className="flex items-center gap-3">
               <img 
-                src="https://bxjuphdnzhidzlcctubl.supabase.co/storage/v1/object/public/tenant-logos/crown%20mobility%20rent%20a%20car.png" 
-                alt="Crown Mobility Logo" 
+                src="https://dzgyxvsewaxnztglnkrh.supabase.co/storage/v1/object/sign/general/crescent-mobility-logo.jpeg?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV85ZGFiZDU3Ny0wYTAyLTQyZjktYjcwMy01ZmQ0ZWYyN2U1YjMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJnZW5lcmFsL2NyZXNjZW50LW1vYmlsaXR5LWxvZ28uanBlZyIsImlhdCI6MTc3MzU1NDQ0NywiZXhwIjoxODA1MDkwNDQ3fQ.TuloT-1wrOmUdTGNA3WTD6xQF0EnExe_ItYvutqB4lc" 
+                alt="Crescent Mobility Logo" 
                 className="h-20 w-auto object-contain"
                 referrerPolicy="no-referrer"
                 onError={(e) => {
@@ -66,7 +66,7 @@ export const Footer = () => {
               </li>
               <li className="flex items-center gap-3">
                 <Mail size={18} className="text-[#D4AF37] shrink-0" />
-                <span className="text-white/40 text-sm">info@crownmobility.ae</span>
+                <span className="text-white/40 text-sm">info@crescentmobility.ae</span>
               </li>
             </ul>
           </div>
@@ -74,7 +74,7 @@ export const Footer = () => {
 
         <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-white/20 text-[10px] uppercase tracking-widest">
-            © 2026 Crown Mobility Rent A Car. All Rights Reserved.
+            © 2026 Crescent Mobility Rent A Car. All Rights Reserved.
           </p>
           <div className="flex gap-6">
             <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-4 opacity-20 grayscale" />

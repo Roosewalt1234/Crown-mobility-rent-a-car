@@ -6,17 +6,14 @@ import { ChevronDown } from 'lucide-react';
 export const CategorySection = () => {
   return (
     <section className="py-20 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-16">
-          <h2 className="text-2xl md:text-3xl font-sans text-[#1A1A1A] flex items-center gap-2">
-            Browse Car Rentals in 
-            <span className="text-[#A8441E] border-b-2 border-[#A8441E] cursor-pointer flex items-center gap-1">
-              Dubai <ChevronDown size={20} />
-            </span>
+          <h2 className="text-3xl md:text-5xl font-serif text-[#1A1A1A]">
+            Select Your Choice of Cars
           </h2>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-y-12 gap-x-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-y-12 gap-x-12">
           {CATEGORIES.map((cat, i) => (
             <motion.div
               key={cat.id}
@@ -26,11 +23,11 @@ export const CategorySection = () => {
               viewport={{ once: true }}
               className="group flex flex-col items-center text-center cursor-pointer"
             >
-              <div className="relative w-full aspect-[4/3] mb-4 overflow-hidden">
+              <div className="relative w-full aspect-[16/10] mb-4">
                 <img 
                   src={cat.image} 
                   alt={cat.name} 
-                  className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-110"
+                  className="w-full h-full object-contain transition-all duration-500 group-hover:scale-110"
                   referrerPolicy="no-referrer"
                 />
               </div>
