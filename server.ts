@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 import { createServer as createViteServer } from "vite";
 
@@ -10,19 +11,27 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  // API routes can be added here
-  app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", message: "Crown Car Rental API is active" });
-  });
+  const isProduction = process.env.NODE_ENV === "production";
+  console.log(`Starting server in ${isProduction ? 'production' : 'development'} mode`);
 
-  if (process.env.NODE_ENV !== "production") {
+  if (!isProduction) {
     // Vite middleware for development
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
+
+    // API routes
+    app.get("/api/health", (req, res) => {
+      res.json({ status: "ok", message: "Crown Car Rental API is active" });
+    });
   } else {
+    // API routes
+    app.get("/api/health", (req, res) => {
+      res.json({ status: "ok", message: "Crown Car Rental API is active" });
+    });
+
     // Serve static files in production
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
