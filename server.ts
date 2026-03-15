@@ -9,6 +9,7 @@ const __dirname = path.dirname(__filename);
 
 async function startServer() {
   const app = express();
+  app.set('trust proxy', 1);
   
   app.use((req, res, next) => {
     console.log(`${req.method} ${req.url}`);
