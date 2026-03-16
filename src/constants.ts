@@ -14,21 +14,21 @@ export const CATEGORIES: Category[] = [
 export const FLEET_STOCK: Car[] = [
   {
     id: '1',
-    name: 'Land Rover Range Rover Sport SVR 2023',
-    brand: 'Land Rover',
+    name: 'Jetour T2 2026',
+    brand: 'Jetour',
     type: 'SUV',
-    image: 'https://images.unsplash.com/photo-1606611013016-969c19ba27bb?auto=format&fit=crop&q=80&w=800',
-    description: 'Rich Brown SUV, 5 Seats, Enhanced Cooling System, Adaptive Headlights, High-End Upholstery',
-    location: 'Business Bay, Dubai',
-    year: 2023,
+    image: 'https://dzgyxvsewaxnztglnkrh.supabase.co/storage/v1/object/sign/stock-car-images/jetour%20t2.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV85ZGFiZDU3Ny0wYTAyLTQyZjktYjcwMy01ZmQ0ZWYyN2U1YjMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJzdG9jay1jYXItaW1hZ2VzL2pldG91ciB0Mi5wbmciLCJpYXQiOjE3NzM1OTQ5NDYsImV4cCI6MTgwNTEzMDk0Nn0._CVQmK0juZZsOsse2cf58R6wGv14NSY45eZJBl7Qr1E',
+    description: 'A rugged off-road SUV with bold styling, strong performance, advanced technology, spacious interior, and excellent capability for both city driving and adventure.',
+    location: 'Dubai',
+    year: 2026,
     region: 'GCC',
     pricing: {
-      day: { original: 1150, current: 920 },
-      week: { original: 8000, current: 6000 },
-      month: { original: 25000, current: 21000 }
+      day: { original: 300, current: 250 },
+      week: { original: 2040, current: 1700 },
+      month: { original: 6600, current: 5500 }
     },
-    mileageLimit: 250,
-    additionalMileageCharge: 5,
+    mileageLimit: 100,
+    additionalMileageCharge: 20,
     includedFeatures: ['1 day rental available', 'Insurance included'],
     specs: { passengers: 5, transmission: 'Automatic', fuel: 'Petrol' }
   },

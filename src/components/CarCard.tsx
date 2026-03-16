@@ -16,7 +16,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car }) => {
       className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 flex flex-col h-full font-sans"
     >
       {/* Image Section */}
-      <div className="relative h-64 overflow-hidden">
+      <div className="relative h-48 overflow-hidden">
         <img 
           src={car.image} 
           alt={car.name} 
@@ -40,29 +40,29 @@ export const CarCard: React.FC<CarCardProps> = ({ car }) => {
       </div>
 
       {/* Content Section */}
-      <div className="p-5 flex flex-col flex-1 space-y-4">
+      <div className="p-4 flex flex-col flex-1 space-y-3">
         {/* Title & Actions */}
-        <div className="flex justify-between items-start gap-4">
-          <div className="space-y-1">
-            <h3 className="text-lg font-bold text-gray-900 leading-tight">{car.name}</h3>
-            <p className="text-[13px] text-gray-500 leading-snug">
+        <div className="flex justify-between items-start gap-2">
+          <div className="space-y-0.5">
+            <h3 className="text-base font-bold text-gray-900 leading-tight">{car.name}</h3>
+            <p className="text-[11px] text-gray-500 leading-snug">
               Rent in Dubai: {car.description}
             </p>
           </div>
-          <div className="flex gap-2 shrink-0">
-            <button className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors">
-              <Share2 size={18} />
+          <div className="flex gap-1.5 shrink-0">
+            <button className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors">
+              <Share2 size={16} />
             </button>
-            <button className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors">
-              <Heart size={18} />
+            <button className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors">
+              <Heart size={16} />
             </button>
           </div>
         </div>
 
         {/* Location */}
-        <div className="flex items-center gap-1.5 text-[#FF6321]">
-          <MapPin size={16} fill="currentColor" fillOpacity={0.2} />
-          <span className="text-[13px] font-medium">{car.location}</span>
+        <div className="flex items-center gap-1 text-[#FF6321]">
+          <MapPin size={14} fill="currentColor" fillOpacity={0.2} />
+          <span className="text-[12px] font-medium">{car.location}</span>
         </div>
 
         {/* Tags */}
@@ -89,7 +89,7 @@ export const CarCard: React.FC<CarCardProps> = ({ car }) => {
         </div>
 
         {/* Pricing Grid */}
-        <div className="grid grid-cols-3 gap-2 bg-gray-50/50 p-1 rounded-2xl border border-gray-100">
+        <div className="grid grid-cols-3 gap-1.5 bg-gray-50/50 p-1 rounded-xl border border-gray-100">
           {[
             { label: 'day', price: car.pricing.day, active: true },
             { label: 'week', price: car.pricing.week, active: false },
@@ -97,17 +97,17 @@ export const CarCard: React.FC<CarCardProps> = ({ car }) => {
           ].map((plan) => (
             <div 
               key={plan.label}
-              className={`py-3 px-2 rounded-xl text-center transition-all ${
+              className={`py-2 px-1 rounded-lg text-center transition-all ${
                 plan.active 
                   ? 'bg-white shadow-sm border border-gray-100' 
                   : 'opacity-60'
               }`}
             >
-              <p className="text-[10px] uppercase font-bold text-gray-400 line-through mb-0.5">
+              <p className="text-[8px] uppercase font-bold text-gray-400 line-through mb-0.5">
                 AED {plan.price.original}
               </p>
-              <p className="text-[16px] font-bold text-gray-900 leading-none">AED {plan.price.current}</p>
-              <p className="text-[11px] font-bold text-[#FF6321] mt-1">
+              <p className="text-[13px] font-bold text-gray-900 leading-none">AED {plan.price.current}</p>
+              <p className="text-[9px] font-bold text-[#FF6321] mt-1">
                 / {plan.label}
               </p>
             </div>
@@ -115,30 +115,30 @@ export const CarCard: React.FC<CarCardProps> = ({ car }) => {
         </div>
 
         {/* Mileage Table */}
-        <div className="border border-gray-100 rounded-2xl overflow-hidden text-[13px]">
-          <div className="flex justify-between items-center p-3 border-b border-gray-50">
-            <span className="text-gray-500">Included mileage limit</span>
+        <div className="border border-gray-100 rounded-xl overflow-hidden text-[12px]">
+          <div className="flex justify-between items-center p-2.5 border-b border-gray-50">
+            <span className="text-gray-500">Mileage limit</span>
             <span className="font-bold text-gray-900">{car.mileageLimit} km</span>
           </div>
-          <div className="flex justify-between items-center p-3">
-            <span className="text-gray-500">Additional mileage charge</span>
-            <span className="font-bold text-gray-900">AED {car.additionalMileageCharge} / Km</span>
+          <div className="flex justify-between items-center p-2.5">
+            <span className="text-gray-500">Extra charge</span>
+            <span className="font-bold text-gray-900">AED {car.additionalMileageCharge}/Km</span>
           </div>
         </div>
 
         {/* Badges */}
-        <div className="flex flex-wrap gap-x-6 gap-y-2 pt-1">
+        <div className="flex flex-col gap-1.5 pt-1">
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
-              <Check size={12} className="text-white" strokeWidth={4} />
+            <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
+              <Check size={10} className="text-white" strokeWidth={4} />
             </div>
-            <span className="text-[13px] text-gray-600">1 day rental available</span>
+            <span className="text-[12px] text-gray-600">1 day rental available</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
-              <Check size={12} className="text-white" strokeWidth={4} />
+            <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
+              <Check size={10} className="text-white" strokeWidth={4} />
             </div>
-            <span className="text-[13px] text-gray-600">Insurance included</span>
+            <span className="text-[12px] text-gray-600">Insurance included</span>
           </div>
         </div>
 

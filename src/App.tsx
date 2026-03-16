@@ -62,7 +62,7 @@ export default function App() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {loading ? (
                   <div className="col-span-full flex flex-col items-center justify-center py-20 space-y-4">
                     <Loader2 className="w-12 h-12 text-[#D4AF37] animate-spin" />

@@ -6,6 +6,7 @@ export const fleetService = {
     const { data, error } = await supabase
       .from('fleet_stock')
       .select('*')
+      .order('created_at', { ascending: true })
       .limit(6);
 
     if (error) {
