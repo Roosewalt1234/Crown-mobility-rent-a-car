@@ -1,6 +1,6 @@
 import React from 'react';
 import { CATEGORIES } from '../constants';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { ChevronDown } from 'lucide-react';
 
 export const CategorySection = () => {

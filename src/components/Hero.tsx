@@ -1,6 +1,6 @@
 import React from 'react';
 import { Search, Calendar, MapPin, Car } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 
 export const Hero = () => {
   return (

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { WavyTransition } from './components/WavyTransition';
@@ -6,52 +6,43 @@ import { CategorySection } from './components/CategorySection';
 import { CarCard } from './components/CarCard';
 import { Chatbot } from './components/Chatbot';
 import { Footer } from './components/Footer';
-import { CARS } from './constants';
-import { Shield, Clock, CreditCard, Award } from 'lucide-react';
-import { motion } from 'framer-motion';
-
-class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
-  constructor(props: { children: React.ReactNode }) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error("ErrorBoundary caught an error", error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="min-h-screen bg-black text-white flex items-center justify-center p-8">
-          <div className="max-w-md w-full bg-zinc-900 p-8 rounded-2xl border border-red-500/50">
-            <h2 className="text-2xl font-serif text-red-500 mb-4">Something went wrong</h2>
-            <p className="text-zinc-400 mb-6">{this.state.error?.message}</p>
-            <button 
-              onClick={() => window.location.reload()}
-              className="w-full py-3 bg-[#D4AF37] text-black font-bold rounded-xl"
-            >
-              Reload Page
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
-}
+import { FLEET_STOCK as STATIC_FLEET_STOCK } from './constants';
+import { fleetService } from './services/fleetService';
+import { Car } from './types';
+import { Shield, Clock, CreditCard, Award, Loader2 } from 'lucide-react';
+import { motion } from 'motion/react';
 
 export default function App() {
-  console.log('App component is rendering...');
+  const [cars, setCars] = useState<Car[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchCars = async () => {
+      try {
+        setLoading(true);
+        const data = await fleetService.getFeaturedCars();
+        if (data && data.length > 0) {
+          setCars(data);
+        } else {
+          // Fallback to static if no data in DB
+          setCars(STATIC_FLEET_STOCK.slice(0, 6));
+        }
+      } catch (err) {
+        console.error('Failed to fetch cars:', err);
+        setError('Could not load premium fleet. Showing available stock.');
+        setCars(STATIC_FLEET_STOCK.slice(0, 6));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCars();
+  }, []);
+
   return (
-    <ErrorBoundary>
-      <div className="min-h-screen bg-black text-white selection:bg-[#D4AF37] selection:text-black">
-        <Navbar />
+    <div className="min-h-screen bg-black text-white selection:bg-[#D4AF37] selection:text-black">
+      <Navbar />
         
         <main>
           <Hero />
@@ -64,7 +55,7 @@ export default function App() {
               <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
                 <div className="space-y-4">
                   <p className="text-[#D4AF37] text-sm uppercase tracking-[0.3em] font-bold">Exclusive Selection</p>
-                  <h2 className="text-4xl md:text-5xl font-serif text-black">Featured Luxury Cars</h2>
+                  <h2 className="text-4xl md:text-5xl font-serif text-black">Featured Cars</h2>
                 </div>
                 <button className="text-[#D4AF37] border-b border-[#D4AF37]/30 pb-1 hover:border-[#D4AF37] transition-all uppercase tracking-widest text-xs font-bold">
                   View All Vehicles
@@ -72,10 +63,24 @@ export default function App() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {CARS.slice(0, 6).map((car) => (
-                  <CarCard key={car.id} car={car} />
-                ))}
+                {loading ? (
+                  <div className="col-span-full flex flex-col items-center justify-center py-20 space-y-4">
+                    <Loader2 className="w-12 h-12 text-[#D4AF37] animate-spin" />
+                    <p className="text-zinc-500 font-medium">Loading premium fleet...</p>
+                  </div>
+                ) : (
+                  cars.map((car) => (
+                    <CarCard key={car.id} car={car} />
+                  ))
+                )}
               </div>
+              {error && (
+                <div className="mt-8 text-center">
+                  <p className="text-amber-600 text-sm font-medium bg-amber-50 py-2 px-4 rounded-full inline-block border border-amber-100">
+                    {error}
+                  </p>
+                </div>
+              )}
             </div>
           </section>
 
@@ -83,7 +88,6 @@ export default function App() {
 
           {/* Why Choose Us Section */}
           <section className="py-24 bg-black relative overflow-hidden">
-            {/* Decorative Elements */}
             <div className="absolute top-0 right-0 w-1/2 h-full bg-[#D4AF37]/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2" />
             
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -171,7 +175,6 @@ export default function App() {
 
         <Footer />
         <Chatbot />
-      </div>
-    </ErrorBoundary>
+    </div>
   );
 }

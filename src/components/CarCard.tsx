@@ -1,7 +1,7 @@
 import React from 'react';
-import { Share2, Heart, MapPin, Check, Phone, MessageCircle, Calendar, Shield, Settings, ArrowRight } from 'lucide-react';
+import { Share2, Heart, MapPin, Check, Phone, MessageCircle, Car as CarIcon, Settings, Info } from 'lucide-react';
 import { Car } from '../types';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 
 interface CarCardProps {
   car: Car;
@@ -13,153 +13,143 @@ export const CarCard: React.FC<CarCardProps> = ({ car }) => {
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      whileHover={{ y: -12 }}
-      className="group relative bg-white border border-gray-100 rounded-[2.5rem] overflow-hidden shadow-[0_10px_30px_-15px_rgba(0,0,0,0.05)] hover:shadow-[0_30px_60px_-20px_rgba(0,0,0,0.15)] transition-all duration-500 flex flex-col h-full"
+      className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 flex flex-col h-full font-sans"
     >
-      {/* Dynamic Glow Effect */}
-      <div className="absolute -inset-1 bg-gradient-to-r from-[#D4AF37] to-[#FFD700] rounded-[2.6rem] blur opacity-0 group-hover:opacity-20 transition duration-500"></div>
-      
-      {/* Image Section with Parallax-like Zoom */}
-      <div className="relative h-80 overflow-hidden">
-        <motion.img 
+      {/* Image Section */}
+      <div className="relative h-64 overflow-hidden">
+        <img 
           src={car.image} 
           alt={car.name} 
-          className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+          className="w-full h-full object-cover"
           referrerPolicy="no-referrer"
         />
         
-        {/* Floating Badge */}
-        <div className="absolute top-6 left-6">
-          <div className="px-4 py-1.5 bg-black/40 backdrop-blur-xl border border-white/20 rounded-full">
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#D4AF37]">{car.type}</span>
-          </div>
-        </div>
-
-        {/* Top Actions Overlay */}
-        <div className="absolute top-6 right-6 flex flex-col gap-3 translate-x-12 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-500">
-          <button className="p-3 rounded-2xl bg-white/90 backdrop-blur-md text-gray-900 hover:bg-[#D4AF37] hover:text-white shadow-xl transition-all">
-            <Share2 size={20} />
-          </button>
-          <button className="p-3 rounded-2xl bg-white/90 backdrop-blur-md text-gray-900 hover:bg-red-500 hover:text-white shadow-xl transition-all">
-            <Heart size={20} />
-          </button>
-        </div>
-
-        {/* Pagination Dots Overlay */}
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+        {/* Pagination Dots */}
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
           {[0, 1, 2, 3].map((i) => (
-            <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i === 0 ? 'w-6 bg-[#D4AF37]' : 'w-1.5 bg-white/50'}`} />
+            <div key={i} className={`h-2 rounded-full transition-all duration-300 ${i === 0 ? 'w-2 bg-white' : 'w-2 bg-white/40'}`} />
           ))}
         </div>
 
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
+        {/* Back Arrow (Optional, as seen in image) */}
+        <div className="absolute top-4 left-4">
+          <div className="w-8 h-8 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center cursor-pointer">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </div>
+        </div>
       </div>
 
-      <div className="p-8 flex flex-col flex-1 space-y-6 relative bg-white">
-        {/* Header: Title & Description */}
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <h3 className="text-2xl font-bold text-gray-900 group-hover:text-[#D4AF37] transition-colors duration-300">{car.name}</h3>
-            <div className="flex items-center gap-1 text-[#D4AF37]">
-              <Shield size={16} />
-              <span className="text-[10px] font-bold uppercase tracking-tighter">Verified</span>
-            </div>
+      {/* Content Section */}
+      <div className="p-5 flex flex-col flex-1 space-y-4">
+        {/* Title & Actions */}
+        <div className="flex justify-between items-start gap-4">
+          <div className="space-y-1">
+            <h3 className="text-lg font-bold text-gray-900 leading-tight">{car.name}</h3>
+            <p className="text-[13px] text-gray-500 leading-snug">
+              Rent in Dubai: {car.description}
+            </p>
           </div>
-          <p className="text-sm text-gray-500 leading-relaxed line-clamp-2 font-light italic">
-            "{car.description}"
-          </p>
+          <div className="flex gap-2 shrink-0">
+            <button className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors">
+              <Share2 size={18} />
+            </button>
+            <button className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors">
+              <Heart size={18} />
+            </button>
+          </div>
         </div>
 
-        {/* Location & Tags with Glassmorphism */}
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-50 text-orange-600 rounded-xl">
-            <MapPin size={14} />
-            <span className="text-[11px] font-bold">{car.location}</span>
+        {/* Location */}
+        <div className="flex items-center gap-1.5 text-[#FF6321]">
+          <MapPin size={16} fill="currentColor" fillOpacity={0.2} />
+          <span className="text-[13px] font-medium">{car.location}</span>
+        </div>
+
+        {/* Tags */}
+        <div className="flex flex-wrap gap-2">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 border border-gray-100 rounded-full text-gray-600">
+            <CarIcon size={14} />
+            <span className="text-xs font-medium">{car.year}</span>
           </div>
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-xl">
-            <Calendar size={14} />
-            <span className="text-[11px] font-bold">{car.year}</span>
-          </div>
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-purple-50 text-purple-600 rounded-xl">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 border border-gray-100 rounded-full text-gray-600">
             <Settings size={14} />
-            <span className="text-[11px] font-bold">{car.region}</span>
+            <span className="text-xs font-medium">{car.region}</span>
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 border border-gray-100 rounded-full text-gray-600">
+            <span className="text-xs font-medium uppercase">{car.type}</span>
           </div>
         </div>
 
-        {/* Pricing Section - Interactive Bento Style */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-4">
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Rental Plans</span>
-            <div className="h-px flex-1 bg-gradient-to-r from-gray-100 to-transparent" />
-          </div>
-          
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { label: 'day', price: car.pricing.day, active: true },
-              { label: 'week', price: car.pricing.week, active: false },
-              { label: 'month', price: car.pricing.month, active: false }
-            ].map((plan) => (
-              <motion.div 
-                key={plan.label}
-                whileHover={{ scale: 1.05 }}
-                className={`p-4 rounded-3xl text-center transition-all duration-300 cursor-pointer ${
-                  plan.active 
-                    ? 'bg-gradient-to-br from-[#D4AF37] to-[#B8962E] text-white shadow-lg shadow-[#D4AF37]/30' 
-                    : 'bg-gray-50 border border-gray-100 text-gray-900 hover:bg-white hover:border-[#D4AF37]/30'
-                }`}
-              >
-                <p className={`text-[9px] uppercase font-bold mb-1 ${plan.active ? 'text-white/70' : 'text-gray-400'}`}>
-                  {plan.label}
-                </p>
-                <p className="text-sm font-black">AED {plan.price.current}</p>
-                <p className={`text-[8px] line-through mt-0.5 ${plan.active ? 'text-white/50' : 'text-gray-300'}`}>
-                  AED {plan.price.original}
-                </p>
-              </motion.div>
-            ))}
+        {/* Pricing Header */}
+        <div className="pt-2">
+          <div className="flex items-center gap-3">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-gray-900">Pricing</span>
+            <div className="h-px flex-1 bg-gray-100" />
           </div>
         </div>
 
-        {/* Mileage Info with Visual Progress */}
-        <div className="p-5 bg-black/[0.02] rounded-3xl space-y-3 border border-black/[0.03]">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-[#D4AF37]" />
-              <span className="text-xs font-medium text-gray-500">Mileage Limit</span>
+        {/* Pricing Grid */}
+        <div className="grid grid-cols-3 gap-2 bg-gray-50/50 p-1 rounded-2xl border border-gray-100">
+          {[
+            { label: 'day', price: car.pricing.day, active: true },
+            { label: 'week', price: car.pricing.week, active: false },
+            { label: 'month', price: car.pricing.month, active: false }
+          ].map((plan) => (
+            <div 
+              key={plan.label}
+              className={`py-3 px-2 rounded-xl text-center transition-all ${
+                plan.active 
+                  ? 'bg-white shadow-sm border border-gray-100' 
+                  : 'opacity-60'
+              }`}
+            >
+              <p className="text-[10px] uppercase font-bold text-gray-400 line-through mb-0.5">
+                AED {plan.price.original}
+              </p>
+              <p className="text-[16px] font-bold text-gray-900 leading-none">AED {plan.price.current}</p>
+              <p className="text-[11px] font-bold text-[#FF6321] mt-1">
+                / {plan.label}
+              </p>
             </div>
-            <span className="text-sm font-black text-gray-900">{car.mileageLimit} km <span className="text-[10px] text-gray-400 font-normal">/ day</span></span>
+          ))}
+        </div>
+
+        {/* Mileage Table */}
+        <div className="border border-gray-100 rounded-2xl overflow-hidden text-[13px]">
+          <div className="flex justify-between items-center p-3 border-b border-gray-50">
+            <span className="text-gray-500">Included mileage limit</span>
+            <span className="font-bold text-gray-900">{car.mileageLimit} km</span>
           </div>
-          <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-            <motion.div 
-              initial={{ width: 0 }}
-              whileInView={{ width: '70%' }}
-              className="h-full bg-gradient-to-r from-[#D4AF37] to-[#FFD700]"
-            />
-          </div>
-          <div className="flex justify-between items-center text-[10px] text-gray-400 uppercase font-bold tracking-tighter">
-            <span>Extra: AED {car.additionalMileageCharge}/km</span>
-            <span className="text-green-600">Insurance Included</span>
+          <div className="flex justify-between items-center p-3">
+            <span className="text-gray-500">Additional mileage charge</span>
+            <span className="font-bold text-gray-900">AED {car.additionalMileageCharge} / Km</span>
           </div>
         </div>
 
-        {/* Book Now Button with Shimmer and Scale */}
-        <div className="pt-4 mt-auto">
-          <motion.button 
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="group/btn relative w-full py-5 bg-gray-900 text-white font-black rounded-3xl overflow-hidden transition-all duration-300 shadow-2xl shadow-black/20"
-          >
-            {/* Shimmer Effect */}
-            <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover/btn:animate-[shimmer_2s_infinite]" />
-            
-            <div className="relative flex items-center justify-center gap-3">
-              <span className="uppercase tracking-[0.3em] text-xs">Book This Experience</span>
-              <div className="w-8 h-8 rounded-full bg-[#D4AF37] flex items-center justify-center group-hover/btn:rotate-45 transition-transform duration-500">
-                <ArrowRight size={16} className="text-black" />
-              </div>
+        {/* Badges */}
+        <div className="flex flex-wrap gap-x-6 gap-y-2 pt-1">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+              <Check size={12} className="text-white" strokeWidth={4} />
             </div>
-          </motion.button>
+            <span className="text-[13px] text-gray-600">1 day rental available</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+              <Check size={12} className="text-white" strokeWidth={4} />
+            </div>
+            <span className="text-[13px] text-gray-600">Insurance included</span>
+          </div>
+        </div>
+
+        {/* Footer Buttons */}
+        <div className="grid grid-cols-2 gap-3 pt-2 mt-auto">
+          <button className="flex items-center justify-center gap-2 py-3.5 rounded-xl border border-purple-100 bg-[#F5F3FF] text-[#7C3AED] hover:bg-purple-100 transition-colors">
+            <Phone size={20} fill="currentColor" />
+          </button>
+          <button className="flex items-center justify-center gap-2 py-3.5 rounded-xl border border-green-100 bg-[#F0FDF4] text-[#22C55E] hover:bg-green-100 transition-colors">
+            <MessageCircle size={22} fill="currentColor" />
+          </button>
         </div>
       </div>
     </motion.div>

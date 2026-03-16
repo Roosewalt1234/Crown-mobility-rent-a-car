@@ -11,26 +11,26 @@ export const CATEGORIES: Category[] = [
   { id: 'driver-only', name: 'DRIVER SERVICE', icon: 'User', image: 'https://dzgyxvsewaxnztglnkrh.supabase.co/storage/v1/object/sign/web%20page%20images/cadilac%20with%20driver-cresecent%20(1).png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV85ZGFiZDU3Ny0wYTAyLTQyZjktYjcwMy01ZmQ0ZWYyN2U1YjMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJ3ZWIgcGFnZSBpbWFnZXMvY2FkaWxhYyB3aXRoIGRyaXZlci1jcmVzZWNlbnQgKDEpLnBuZyIsImlhdCI6MTc3MzQxNDY1OSwiZXhwIjoxODA0OTUwNjU5fQ.Z9UsSzosZFYu5_wX8pzJWeEcYgtjrIEk1fg-y-Q41cA', count: 11, unit: 'Services' },
 ];
 
-export const CARS: Car[] = [
+export const FLEET_STOCK: Car[] = [
   {
     id: '1',
-    name: 'GMC Yukon 2025',
-    brand: 'GMC',
+    name: 'Land Rover Range Rover Sport SVR 2023',
+    brand: 'Land Rover',
     type: 'SUV',
-    image: 'https://images.unsplash.com/photo-1631214524020-5e18410f542f?auto=format&fit=crop&q=80&w=800',
-    description: 'Dubai Rental: White SUV, 7 Seater, Bold Exterior Design, Large Touchscreen, Premium Leather Seats, Advanced Safety System',
-    location: 'Al Quoz, Dubai',
-    year: 2025,
+    image: 'https://images.unsplash.com/photo-1606611013016-969c19ba27bb?auto=format&fit=crop&q=80&w=800',
+    description: 'Rich Brown SUV, 5 Seats, Enhanced Cooling System, Adaptive Headlights, High-End Upholstery',
+    location: 'Business Bay, Dubai',
+    year: 2023,
     region: 'GCC',
     pricing: {
-      day: { original: 800, current: 475 },
-      week: { original: 4500, current: 3000 },
-      month: { original: 14000, current: 10000 }
+      day: { original: 1150, current: 920 },
+      week: { original: 8000, current: 6000 },
+      month: { original: 25000, current: 21000 }
     },
     mileageLimit: 250,
-    additionalMileageCharge: 3,
-    includedFeatures: ['1 day rental available', 'Insurance included', 'Free delivery'],
-    specs: { passengers: 7, transmission: 'Automatic', fuel: 'Petrol' }
+    additionalMileageCharge: 5,
+    includedFeatures: ['1 day rental available', 'Insurance included'],
+    specs: { passengers: 5, transmission: 'Automatic', fuel: 'Petrol' }
   },
   {
     id: '2',
