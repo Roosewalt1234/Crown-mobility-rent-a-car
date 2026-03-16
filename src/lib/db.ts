@@ -4,18 +4,23 @@ const { Pool } = pg;
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  ssl: { rejectUnauthorized: false }, // Force SSL for Railway
 });
 
 export const query = (text: string, params?: any[]) => pool.query(text, params);
 
 export const initDb = async () => {
+  console.log('Attempting to initialize database...');
   if (!process.env.DATABASE_URL) {
-    console.warn('DATABASE_URL not found. Skipping database initialization.');
+    console.error('CRITICAL: DATABASE_URL not found in environment variables.');
     return;
   }
 
   try {
+    // Test connection first
+    const testResult = await query('SELECT NOW()');
+    console.log('Database connection test successful:', testResult.rows[0]);
+
     await query(`
       CREATE TABLE IF NOT EXISTS contacts (
         id SERIAL PRIMARY KEY,
@@ -39,8 +44,8 @@ export const initDb = async () => {
         status TEXT DEFAULT 'sent'
       );
     `);
-    console.log('Database initialized successfully');
+    console.log('Database tables verified/created successfully');
   } catch (err) {
-    console.error('Error initializing database:', err);
+    console.error('DATABASE INITIALIZATION ERROR:', err);
   }
 };
