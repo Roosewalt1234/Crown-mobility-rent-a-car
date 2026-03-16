@@ -8,7 +8,7 @@ import ReactMarkdown from 'react-markdown';
 export const Chatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'model', text: "Hi! This is Sophie from Crescent Mobility Rent A Car. Please let us know which car you are looking for and for how many days. All car details are in our WhatsApp catalog — you can also select from there. 😊" }
+    { role: 'model', text: "Hi! This is Sophie from Crescent Mobility Rent A Car in Dubai. 🚗 Please let us know which car you are looking for and for how many days. All car details are in our WhatsApp catalog — you can also select from there. 😊" }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -22,10 +22,10 @@ export const Chatbot = () => {
   const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
-    let id = localStorage.getItem('crescent_chat_id_v2');
+    let id = localStorage.getItem('crescent_chat_id_v3');
     if (!id) {
       id = 'user_' + Math.random().toString(36).substring(2, 11) + '@c.us';
-      localStorage.setItem('crescent_chat_id_v2', id);
+      localStorage.setItem('crescent_chat_id_v3', id);
     }
     setChatId(id);
 

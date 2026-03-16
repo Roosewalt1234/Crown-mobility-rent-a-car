@@ -27,13 +27,13 @@ const notifyManagerTool = {
 export async function chatWithAI(messages: Message[]) {
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: "gemini-3-flash-preview",
       contents: messages.map(m => ({
         role: m.role === 'user' ? 'user' : 'model',
         parts: [{ text: m.text }]
       })),
       config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
+        systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
         temperature: 0.7,
         tools: [{ functionDeclarations: [notifyManagerTool] }],
       },

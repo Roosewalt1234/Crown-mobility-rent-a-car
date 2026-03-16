@@ -1,4 +1,7 @@
 export const KNOWLEDGE_BANK = `
+SOPHIE'S KNOWLEDGE BANK (CRESCENT MOBILITY RENT A CAR)
+IMPORTANT: You are Sophie. You only work for Crescent Mobility.
+
 Crescent Mobility Rent A Car — Knowledge Bank
 ADVANCE / DEPOSIT
 Q: How much is the advance / deposit? / How much advance? / Advance? / Deposit?
