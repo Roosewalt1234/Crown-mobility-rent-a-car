@@ -73,6 +73,11 @@ export const Chatbot = () => {
     }
   }, [messages]);
 
+  const handleSendRef = useRef(handleSend);
+  useEffect(() => {
+    handleSendRef.current = handleSend;
+  }, [handleSend]);
+
   // Speech Recognition Setup
   useEffect(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -86,7 +91,7 @@ export const Chatbot = () => {
         const transcript = event.results[0][0].transcript;
         setInput(transcript);
         setIsListening(false);
-        handleSend(transcript);
+        handleSendRef.current(transcript);
       };
 
       recognitionRef.current.onerror = () => {
@@ -124,6 +129,17 @@ export const Chatbot = () => {
     const textToSend = textOverride || input;
     if (!textToSend.trim() || isLoading) return;
 
+    // Ensure we have a chatId before sending
+    let currentChatId = chatId;
+    if (!currentChatId) {
+      currentChatId = localStorage.getItem('crescent_chat_id_v3') || '';
+      if (!currentChatId) {
+        console.error('Chat ID missing, cannot send message');
+        return;
+      }
+      setChatId(currentChatId);
+    }
+
     const userMessage: Message = { role: 'user', text: textToSend };
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
@@ -132,11 +148,11 @@ export const Chatbot = () => {
 
     // Save user message to DB
     try {
-      await fetch('/api/messages', {
+      const response = await fetch('/api/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          chat_id: chatId,
+          chat_id: currentChatId,
           body: textToSend,
           direction: 'incoming',
           is_ai_reply: false,
@@ -144,6 +160,10 @@ export const Chatbot = () => {
           contact_phone: 'Web'
         })
       });
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Failed to save user message:', errorData);
+      }
     } catch (err) {
       console.error('Error saving user message:', err);
     }
@@ -161,11 +181,11 @@ export const Chatbot = () => {
 
     // Save AI message to DB
     try {
-      await fetch('/api/messages', {
+      const response = await fetch('/api/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          chat_id: chatId,
+          chat_id: currentChatId,
           body: aiResponse.text,
           direction: 'outgoing',
           is_ai_reply: true,
@@ -173,6 +193,10 @@ export const Chatbot = () => {
           contact_phone: 'Web'
         })
       });
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Failed to save AI message:', errorData);
+      }
     } catch (err) {
       console.error('Error saving AI message:', err);
     }

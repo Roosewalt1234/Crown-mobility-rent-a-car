@@ -71,7 +71,13 @@ async function startServer() {
   app.post("/api/messages", async (req, res) => {
     try {
       const { chat_id, body, direction, is_ai_reply, contact_name, contact_phone } = req.body;
+      console.log(`[API] Saving message for chat_id: ${chat_id}, direction: ${direction}`);
       
+      if (!chat_id) {
+        console.error("[API] Error: chat_id is missing");
+        return res.status(400).json({ error: "chat_id is missing" });
+      }
+
       // Upsert contact
       await query(
         `INSERT INTO contacts (chat_id, contact_name, contact_phone, last_message_preview, last_message_at)
@@ -89,10 +95,11 @@ async function startServer() {
         [chat_id, body, direction, is_ai_reply]
       );
       
+      console.log(`[API] Message saved successfully: ${result.rows[0].id}`);
       res.json(result.rows[0]);
     } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: "Internal server error" });
+      console.error("[API] Error saving message:", err);
+      res.status(500).json({ error: "Internal server error", details: err instanceof Error ? err.message : String(err) });
     }
   });
 
