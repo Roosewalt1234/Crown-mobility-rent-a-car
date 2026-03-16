@@ -33,7 +33,9 @@ export const initDb = async () => {
         status TEXT DEFAULT 'new',
         human_takeover BOOLEAN DEFAULT FALSE
       );
-
+    `);
+    
+    await query(`
       CREATE TABLE IF NOT EXISTS messages (
         id SERIAL PRIMARY KEY,
         chat_id TEXT NOT NULL REFERENCES contacts(chat_id) ON DELETE CASCADE,

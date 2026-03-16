@@ -16,9 +16,34 @@ async function startServer() {
   app.use(express.json());
 
   // Initialize Database
-  await initDb();
+  initDb().then(() => {
+    console.log("Database init process finished");
+  }).catch(err => {
+    console.error("Database init process failed", err);
+  });
 
   // API Routes
+  app.get("/api/db-check", async (req, res) => {
+    try {
+      if (!process.env.DATABASE_URL) {
+        return res.status(500).json({ status: "error", message: "DATABASE_URL missing" });
+      }
+      const result = await query("SELECT NOW()");
+      const tables = await query(`
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_schema = 'public'
+      `);
+      res.json({ 
+        status: "connected", 
+        time: result.rows[0], 
+        tables: tables.rows.map(r => r.table_name) 
+      });
+    } catch (err) {
+      res.status(500).json({ status: "error", message: err instanceof Error ? err.message : String(err) });
+    }
+  });
+
   app.get("/api/contacts", async (req, res) => {
     try {
       const result = await query("SELECT * FROM contacts ORDER BY last_message_at DESC");
