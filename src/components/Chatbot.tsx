@@ -22,10 +22,10 @@ export const Chatbot = () => {
   const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
-    let id = localStorage.getItem('chatbot_chat_id');
+    let id = localStorage.getItem('crescent_chat_id_v2');
     if (!id) {
       id = 'user_' + Math.random().toString(36).substring(2, 11) + '@c.us';
-      localStorage.setItem('chatbot_chat_id', id);
+      localStorage.setItem('crescent_chat_id_v2', id);
     }
     setChatId(id);
 
