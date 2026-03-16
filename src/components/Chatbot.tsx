@@ -8,16 +8,64 @@ import ReactMarkdown from 'react-markdown';
 export const Chatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'model', text: "Hello! I'm Nathasha, your personal Crescent concierge. How can I assist you with your luxury car rental today?" }
+    { role: 'model', text: "Hi! This is Sophie from Crescent Mobility Rent A Car. Please let us know which car you are looking for and for how many days. All car details are in our WhatsApp catalog — you can also select from there. 😊" }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [autoSpeak, setAutoSpeak] = useState(true);
+  const [chatId, setChatId] = useState<string>('');
+  const [isHumanTakeover, setIsHumanTakeover] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
+
+  useEffect(() => {
+    let id = localStorage.getItem('chatbot_chat_id');
+    if (!id) {
+      id = 'user_' + Math.random().toString(36).substring(2, 11) + '@c.us';
+      localStorage.setItem('chatbot_chat_id', id);
+    }
+    setChatId(id);
+
+    // Initial fetch of history
+    const fetchHistory = async () => {
+      try {
+        const res = await fetch(`/api/messages/${id}`);
+        const data = await res.json();
+        if (data.length > 0) {
+          setMessages(data.map((m: any) => ({
+            role: m.direction === 'incoming' ? 'user' : 'model',
+            text: m.body
+          })));
+        }
+      } catch (err) {
+        console.error('Error fetching history:', err);
+      }
+    };
+
+    const checkTakeover = async () => {
+      try {
+        const res = await fetch('/api/contacts');
+        const contacts = await res.json();
+        const contact = contacts.find((c: any) => c.chat_id === id);
+        if (contact) {
+          setIsHumanTakeover(contact.human_takeover);
+          // If takeover is active, we should also fetch latest messages to see human replies
+          if (contact.human_takeover) {
+            fetchHistory();
+          }
+        }
+      } catch (err) {
+        console.error('Error checking takeover:', err);
+      }
+    };
+
+    fetchHistory();
+    const interval = setInterval(checkTakeover, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -82,13 +130,65 @@ export const Chatbot = () => {
     setInput('');
     setIsLoading(true);
 
+    // Save user message to DB
+    try {
+      await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          body: textToSend,
+          direction: 'incoming',
+          is_ai_reply: false,
+          contact_name: 'Web User',
+          contact_phone: 'Web'
+        })
+      });
+    } catch (err) {
+      console.error('Error saving user message:', err);
+    }
+
+    // If human takeover is active, don't trigger AI
+    if (isHumanTakeover) {
+      setIsLoading(false);
+      return;
+    }
+
     const aiResponse = await chatWithAI(newMessages);
-    const modelMessage: Message = { role: 'model', text: aiResponse };
+    const modelMessage: Message = { role: 'model', text: aiResponse.text };
     setMessages(prev => [...prev, modelMessage]);
     setIsLoading(false);
+
+    // Save AI message to DB
+    try {
+      await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          body: aiResponse.text,
+          direction: 'outgoing',
+          is_ai_reply: true,
+          contact_name: 'Web User',
+          contact_phone: 'Web'
+        })
+      });
+    } catch (err) {
+      console.error('Error saving AI message:', err);
+    }
     
     if (autoSpeak) {
-      speak(aiResponse);
+      speak(aiResponse.text);
+    }
+
+    if (aiResponse.escalated) {
+      console.log("Escalation triggered:", aiResponse.escalationArgs);
+      // Optionally update contact status to escalated
+      await fetch(`/api/contacts/${chatId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'escalated' })
+      });
     }
   };
 
@@ -107,14 +207,14 @@ export const Chatbot = () => {
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-[#D4AF37] flex items-center justify-center bg-[#D4AF37]/10">
                   <img 
-                    src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&q=80&w=100" 
-                    alt="Nathasha"
+                    src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=100" 
+                    alt="Sophie"
                     className="w-full h-full object-cover"
                     referrerPolicy="no-referrer"
                   />
                 </div>
                 <div>
-                  <h3 className="text-white font-serif text-sm font-bold">Nathasha</h3>
+                  <h3 className="text-white font-serif text-sm font-bold">Sophie</h3>
                   <p className="text-[10px] text-[#D4AF37] uppercase tracking-widest">Crescent Concierge</p>
                 </div>
               </div>
@@ -202,7 +302,7 @@ export const Chatbot = () => {
           <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-black" />
         )}
         <div className="absolute right-20 bg-black/80 backdrop-blur-md text-white text-xs px-4 py-2 rounded-full border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-          Chat with Nathasha
+          Chat with Sophie
         </div>
       </motion.button>
     </div>

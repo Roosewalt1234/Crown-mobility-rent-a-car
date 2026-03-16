@@ -1,5 +1,5 @@
 import React from 'react';
-import { Share2, Heart, MapPin, Check, Phone, MessageCircle, Car as CarIcon, Settings, Info } from 'lucide-react';
+import { MapPin, Check, Phone, MessageCircle, Car as CarIcon, Settings } from 'lucide-react';
 import { Car } from '../types';
 import { motion } from 'motion/react';
 
@@ -41,21 +41,13 @@ export const CarCard: React.FC<CarCardProps> = ({ car }) => {
 
       {/* Content Section */}
       <div className="p-4 flex flex-col flex-1 space-y-3">
-        {/* Title & Actions */}
+        {/* Title */}
         <div className="flex justify-between items-start gap-2">
           <div className="space-y-0.5">
             <h3 className="text-base font-bold text-gray-900 leading-tight">{car.name}</h3>
             <p className="text-[11px] text-gray-500 leading-snug">
-              Rent in Dubai: {car.description}
+              {car.description}
             </p>
-          </div>
-          <div className="flex gap-1.5 shrink-0">
-            <button className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors">
-              <Share2 size={16} />
-            </button>
-            <button className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors">
-              <Heart size={16} />
-            </button>
           </div>
         </div>
 

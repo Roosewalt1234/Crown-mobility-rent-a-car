@@ -34,22 +34,22 @@ export const FLEET_STOCK: Car[] = [
   },
   {
     id: '2',
-    name: 'Rolls Royce Cullinan',
-    brand: 'Rolls Royce',
-    type: 'Luxury',
-    image: 'https://images.unsplash.com/photo-1631214524020-5e18410f542f?auto=format&fit=crop&q=80&w=800',
-    description: 'The pinnacle of luxury SUVs. Experience unmatched comfort and prestige on the roads of Dubai.',
-    location: 'Downtown, Dubai',
+    name: 'Dodge Charger GT 2024',
+    brand: 'Dodge',
+    type: 'Sports',
+    image: 'https://images.unsplash.com/photo-1612462225010-388160910156?auto=format&fit=crop&q=80&w=800',
+    description: 'Experience the raw power of American muscle. The Dodge Charger GT combines aggressive styling with a comfortable interior and thrilling performance.',
+    location: 'Dubai',
     year: 2024,
     region: 'GCC',
     pricing: {
-      day: { original: 6000, current: 5000 },
-      week: { original: 35000, current: 30000 },
-      month: { original: 120000, current: 100000 }
+      day: { original: 600, current: 450 },
+      week: { original: 3800, current: 2800 },
+      month: { original: 12000, current: 9500 }
     },
-    mileageLimit: 200,
-    additionalMileageCharge: 15,
-    includedFeatures: ['Chauffeur available', 'Massage seats', 'Starlight headliner'],
+    mileageLimit: 250,
+    additionalMileageCharge: 5,
+    includedFeatures: ['V6 Engine', 'Sport Mode', 'Premium Sound System'],
     specs: { passengers: 5, transmission: 'Automatic', fuel: 'Petrol' }
   },
   {

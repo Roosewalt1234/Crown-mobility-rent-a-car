@@ -8,7 +8,7 @@ export const fleetService = {
       .select('*')
       .order('created_at', { ascending: true })
       .limit(6);
-
+    
     if (error) {
       console.error('Error fetching featured cars:', error);
       throw error;
