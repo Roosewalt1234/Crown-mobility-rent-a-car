@@ -73,11 +73,6 @@ export const Chatbot = () => {
     }
   }, [messages]);
 
-  const handleSendRef = useRef(handleSend);
-  useEffect(() => {
-    handleSendRef.current = handleSend;
-  }, [handleSend]);
-
   // Speech Recognition Setup
   useEffect(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -215,6 +210,11 @@ export const Chatbot = () => {
       });
     }
   };
+
+  const handleSendRef = useRef(handleSend);
+  useEffect(() => {
+    handleSendRef.current = handleSend;
+  }, [handleSend]);
 
   return (
     <div className="fixed bottom-6 right-6 z-[60]">
