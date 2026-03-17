@@ -13,7 +13,13 @@ export const wahaService = {
     }
 
     try {
-      const url = `${wahaUrl.replace(/\/$/, '')}/api/sendText`;
+      // Clean up the URL - handle cases where user might have included /api/sendText in the base URL
+      let baseUrl = wahaUrl.replace(/\/$/, '');
+      if (baseUrl.endsWith('/api/sendText')) {
+        baseUrl = baseUrl.replace(/\/api\/sendText$/, '');
+      }
+      
+      const url = `${baseUrl}/api/sendText`;
       const payload = {
         chatId: chatId,
         text: text,
@@ -21,13 +27,14 @@ export const wahaService = {
       };
 
       console.log(`[WAHA-DEBUG] Sending to: ${url}`);
-      console.log(`[WAHA-DEBUG] Payload: ${JSON.stringify(payload)}`);
+      console.log(`[WAHA-DEBUG] Auth Key present: ${wahaKey ? 'YES' : 'NO'}`);
 
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': wahaKey ? `Bearer ${wahaKey}` : '',
+          ...(wahaKey ? { 'X-Api-Key': wahaKey } : {}), // WAHA often uses X-Api-Key or Authorization
+          ...(wahaKey ? { 'Authorization': `Bearer ${wahaKey}` } : {}),
         },
         body: JSON.stringify(payload),
       });

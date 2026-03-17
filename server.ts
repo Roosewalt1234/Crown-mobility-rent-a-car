@@ -37,6 +37,7 @@ async function startServer() {
         DATABASE_URL: process.env.DATABASE_URL ? "SET" : "MISSING",
         GEMINI_API_KEY: process.env.GEMINI_API_KEY ? "SET" : "MISSING",
         WAHA_URL: process.env.WAHA_URL ? "SET" : "MISSING",
+        WAHA_API_KEY: process.env.WAHA_API_KEY ? "SET" : "MISSING",
         WAHA_SESSION: process.env.WAHA_SESSION || "default",
         NODE_ENV: process.env.NODE_ENV
       }
@@ -276,7 +277,7 @@ async function startServer() {
   }
 
   app.listen(Number(port), '0.0.0.0', () => {
-    console.log(`[VERSION] Server v1.0.2 started on http://localhost:${port}`);
+    console.log(`[VERSION] Server v1.0.3 started on http://localhost:${port}`);
   });
 }
 
