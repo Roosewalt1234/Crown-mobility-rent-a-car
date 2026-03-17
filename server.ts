@@ -70,6 +70,13 @@ async function startServer() {
 
   app.post("/api/messages", async (req, res) => {
     try {
+      console.log("[API] Received POST /api/messages. Body:", JSON.stringify(req.body));
+      
+      if (!process.env.DATABASE_URL) {
+        console.error("[API] Error: DATABASE_URL is not set");
+        return res.status(500).json({ error: "Database configuration missing" });
+      }
+
       const { 
         chat_id: raw_chat_id, 
         body: raw_body, 
@@ -113,14 +120,21 @@ async function startServer() {
       // Insert message
       const result = await query(
         "INSERT INTO messages (chat_id, body, direction, is_ai_reply) VALUES ($1, $2, $3, $4) RETURNING *",
-        [chat_id, body, direction, is_ai_reply]
+        [chat_id, body, direction, is_ai_reply === true]
       );
       
       console.log(`[API] Message saved successfully: ${result.rows[0].id}`);
       res.json(result.rows[0]);
     } catch (err) {
       console.error("[API] Error saving message:", err);
-      res.status(500).json({ error: "Internal server error", details: err instanceof Error ? err.message : String(err) });
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      const errorStack = err instanceof Error ? err.stack : undefined;
+      
+      res.status(500).json({ 
+        error: "Internal server error", 
+        details: errorMessage || "Unknown error",
+        stack: process.env.NODE_ENV !== 'production' ? errorStack : undefined
+      });
     }
   });
 
