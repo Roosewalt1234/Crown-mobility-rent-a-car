@@ -1,4 +1,6 @@
 
+import "dotenv/config";
+
 export const wahaService = {
   async sendMessage(chatId: string, text: string) {
     const wahaUrl = process.env.WAHA_URL;
@@ -6,7 +8,7 @@ export const wahaService = {
     const sessionName = process.env.WAHA_SESSION || 'default';
 
     if (!wahaUrl) {
-      console.warn('[WAHA] WAHA_URL not set, skipping message send');
+      console.warn(`[WAHA-DEBUG] WAHA_URL is not set in process.env. Current keys: ${Object.keys(process.env).filter(k => k.includes('WAHA')).join(', ')}`);
       return;
     }
 
