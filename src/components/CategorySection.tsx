@@ -5,9 +5,9 @@ import { ChevronDown } from 'lucide-react';
 
 export const CategorySection = () => {
   return (
-    <section className="py-20 bg-white">
+    <section className="py-10 bg-white">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-16">
+        <div className="mb-8">
           <h2 className="text-3xl md:text-5xl font-serif text-[#1A1A1A]">
             Select Your Choice of Cars
           </h2>
@@ -23,7 +23,7 @@ export const CategorySection = () => {
               viewport={{ once: true }}
               className="group flex flex-col items-center text-center cursor-pointer"
             >
-              <div className="relative w-full aspect-[16/10] mb-4">
+              <div className="relative w-3/4 aspect-[16/10] mb-4">
                 <img 
                   src={cat.image} 
                   alt={cat.name} 

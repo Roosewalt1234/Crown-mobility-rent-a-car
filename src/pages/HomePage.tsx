@@ -55,12 +55,12 @@ export const HomePage: React.FC = () => {
       <CategorySection />
 
       {/* Featured Cars Section */}
-      <section className="py-24 bg-white">
+      <section className="py-12 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
+          <div className="flex flex-col md:flex-row justify-between items-end mb-8 gap-6">
             <div className="space-y-4">
               <p className="text-[#D4AF37] text-sm uppercase tracking-[0.3em] font-bold">Exclusive Selection</p>
-              <h2 className="text-4xl md:text-5xl font-serif text-black">Featured Cars</h2>
+              <h2 className="text-4xl md:text-5xl font-serif text-black">Our Featured Fleet</h2>
             </div>
             <button className="text-[#D4AF37] border-b border-[#D4AF37]/30 pb-1 hover:border-[#D4AF37] transition-all uppercase tracking-widest text-xs font-bold">
               View All Vehicles
@@ -92,7 +92,7 @@ export const HomePage: React.FC = () => {
       <WavyTransition inverted />
 
       {/* Why Choose Us Section */}
-      <section className="py-24 bg-black relative overflow-hidden">
+      <section className="py-12 bg-black relative overflow-hidden">
         <div className="absolute top-0 right-0 w-1/2 h-full bg-[#D4AF37]/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2" />
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -147,7 +147,7 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 bg-black">
+      <section className="py-12 bg-black">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="relative rounded-[3rem] overflow-hidden">
             <img 
