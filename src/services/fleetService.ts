@@ -45,5 +45,17 @@ export const fleetService = {
       console.error('Error mapping fleet data:', mapError);
       throw new Error('Data format mismatch from Supabase');
     }
+  },
+
+  async getFleetForAI(): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('fleet_stock')
+      .select('*');
+    
+    if (error) {
+      console.error('Error fetching fleet for AI:', error);
+      return [];
+    }
+    return data || [];
   }
 };

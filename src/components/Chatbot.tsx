@@ -1,12 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageSquare, X, Send, Mic, MicOff, Volume2, VolumeX, Bot, Headset } from 'lucide-react';
+import { MessageSquare, X, Send, Mic, MicOff, Volume2, VolumeX, Bot, Headset, Globe } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { chatWithAI } from '../services/geminiService';
+import { chatWithAI, generateSpeech } from '../services/geminiService';
+import { fleetService } from '../services/fleetService';
 import { Message } from '../types';
 import ReactMarkdown from 'react-markdown';
 
 export const Chatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [fleetData, setFleetData] = useState<any[]>([]);
   const [messages, setMessages] = useState<Message[]>([
     { role: 'model', text: "Hi! This is Sophie from Crescent Mobility Rent A Car in Dubai. 🚗 Please let us know which car you are looking for and for how many days. All car details are in our WhatsApp catalog — you can also select from there. 😊" }
   ]);
@@ -17,9 +19,12 @@ export const Chatbot = () => {
   const [autoSpeak, setAutoSpeak] = useState(true);
   const [chatId, setChatId] = useState<string>('');
   const [isHumanTakeover, setIsHumanTakeover] = useState(false);
+  const [lastInputWasVoice, setLastInputWasVoice] = useState(false);
+  const [language, setLanguage] = useState('English');
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     let id = localStorage.getItem('crescent_chat_id_v3');
@@ -29,9 +34,10 @@ export const Chatbot = () => {
     }
     setChatId(id);
 
-    // Initial fetch of history
-    const fetchHistory = async () => {
+    // Initial fetch of history and fleet data
+    const fetchData = async () => {
       try {
+        // Fetch history
         const res = await fetch(`/api/messages/${id}`);
         const data = await res.json();
         if (data.length > 0) {
@@ -40,8 +46,12 @@ export const Chatbot = () => {
             text: m.body
           })));
         }
+
+        // Fetch fleet data for AI context
+        const fleet = await fleetService.getFleetForAI();
+        setFleetData(fleet);
       } catch (err) {
-        console.error('Error fetching history:', err);
+        console.error('Error fetching data:', err);
       }
     };
 
@@ -54,7 +64,7 @@ export const Chatbot = () => {
           setIsHumanTakeover(contact.human_takeover);
           // If takeover is active, we should also fetch latest messages to see human replies
           if (contact.human_takeover) {
-            fetchHistory();
+            fetchData();
           }
         }
       } catch (err) {
@@ -62,9 +72,24 @@ export const Chatbot = () => {
       }
     };
 
-    fetchHistory();
+    fetchData();
     const interval = setInterval(checkTakeover, 3000);
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const handleOpenChat = (e: any) => {
+      setIsOpen(true);
+      if (e.detail && e.detail.message) {
+        // Small delay to ensure state is ready and UI is open
+        setTimeout(() => {
+          handleSendRef.current(e.detail.message);
+        }, 300);
+      }
+    };
+
+    window.addEventListener('open_chatbot', handleOpenChat);
+    return () => window.removeEventListener('open_chatbot', handleOpenChat);
   }, []);
 
   useEffect(() => {
@@ -86,7 +111,8 @@ export const Chatbot = () => {
         const transcript = event.results[0][0].transcript;
         setInput(transcript);
         setIsListening(false);
-        handleSendRef.current(transcript);
+        setLastInputWasVoice(true);
+        handleSendRef.current(transcript, true);
       };
 
       recognitionRef.current.onerror = () => {
@@ -99,16 +125,15 @@ export const Chatbot = () => {
     }
   }, []);
 
-  const speak = (text: string) => {
-    if (!autoSpeak) return;
-    
-    // Stop any current speech
-    window.speechSynthesis.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    window.speechSynthesis.speak(utterance);
+  const playBase64Audio = (base64: string) => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+    const audio = new Audio(`data:audio/mp3;base64,${base64}`);
+    audioRef.current = audio;
+    audio.onplay = () => setIsSpeaking(true);
+    audio.onended = () => setIsSpeaking(false);
+    audio.play();
   };
 
   const toggleListening = () => {
@@ -120,9 +145,14 @@ export const Chatbot = () => {
     }
   };
 
-  const handleSend = async (textOverride?: string) => {
+  const handleSend = async (textOverride?: string, isVoice: boolean = false) => {
     const textToSend = textOverride || input;
     if (!textToSend.trim() || isLoading) return;
+
+    // If it's a manual send (not via voice recognition callback), set voice flag to false
+    if (!textOverride) {
+      setLastInputWasVoice(false);
+    }
 
     // Ensure we have a chatId before sending
     let currentChatId = chatId;
@@ -169,7 +199,7 @@ export const Chatbot = () => {
       return;
     }
 
-    const aiResponse = await chatWithAI(newMessages);
+    const aiResponse = await chatWithAI(newMessages, fleetData, language);
     const modelMessage: Message = { role: 'model', text: aiResponse.text };
     setMessages(prev => [...prev, modelMessage]);
     setIsLoading(false);
@@ -195,9 +225,13 @@ export const Chatbot = () => {
     } catch (err) {
       console.error('Error saving AI message:', err);
     }
-    
-    if (autoSpeak) {
-      speak(aiResponse.text);
+
+    // Only speak if user used voice input
+    if (isVoice && autoSpeak) {
+      const audioBase64 = await generateSpeech(aiResponse.text, language);
+      if (audioBase64) {
+        playBase64Audio(audioBase64);
+      }
     }
 
     if (aiResponse.escalated) {
@@ -255,6 +289,26 @@ export const Chatbot = () => {
               </div>
             </div>
 
+            {/* Language Selector */}
+            <div className="px-6 py-2 bg-white/5 border-b border-white/10 flex items-center gap-3 overflow-x-auto scrollbar-hide">
+              <Globe size={14} className="text-[#D4AF37] shrink-0" />
+              <div className="flex gap-2">
+                {['English', 'Arabic', 'Russian', 'Hindi'].map((lang) => (
+                  <button
+                    key={lang}
+                    onClick={() => setLanguage(lang)}
+                    className={`text-[10px] px-3 py-1 rounded-full transition-all whitespace-nowrap ${
+                      language === lang 
+                        ? 'bg-[#D4AF37] text-black font-bold' 
+                        : 'bg-white/5 text-white/60 hover:text-white'
+                    }`}
+                  >
+                    {lang}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-hide">
               {messages.map((msg, i) => (
@@ -288,12 +342,6 @@ export const Chatbot = () => {
             {/* Input */}
             <div className="p-6 border-t border-white/10 bg-black/50 backdrop-blur-md">
               <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-2xl p-2">
-                <button 
-                  onClick={toggleListening}
-                  className={`p-2 rounded-xl transition-all ${isListening ? 'bg-red-500 text-white animate-pulse' : 'text-white/40 hover:text-[#D4AF37]'}`}
-                >
-                  {isListening ? <MicOff size={20} /> : <Mic size={20} />}
-                </button>
                 <input
                   type="text"
                   value={input}
@@ -302,13 +350,21 @@ export const Chatbot = () => {
                   placeholder="Ask about our fleet..."
                   className="flex-1 bg-transparent text-white text-sm outline-none px-2"
                 />
-                <button 
-                  onClick={() => handleSend()}
-                  disabled={!input.trim() || isLoading}
-                  className="p-2 bg-[#D4AF37] text-black rounded-xl disabled:opacity-50 disabled:grayscale transition-all active:scale-95"
-                >
-                  <Send size={20} />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button 
+                    onClick={toggleListening}
+                    className={`p-2 rounded-xl transition-all ${isListening ? 'bg-red-500 text-white animate-pulse' : 'text-white/40 hover:text-[#D4AF37]'}`}
+                  >
+                    {isListening ? <MicOff size={20} /> : <Mic size={20} />}
+                  </button>
+                  <button 
+                    onClick={() => handleSend()}
+                    disabled={!input.trim() || isLoading}
+                    className="p-2 bg-[#D4AF37] text-black rounded-xl disabled:opacity-50 disabled:grayscale transition-all active:scale-95"
+                  >
+                    <Send size={20} />
+                  </button>
+                </div>
               </div>
             </div>
           </motion.div>

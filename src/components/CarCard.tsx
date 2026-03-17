@@ -139,7 +139,19 @@ export const CarCard: React.FC<CarCardProps> = ({ car }) => {
 
           {/* Footer Button */}
           <div className="pt-2 mt-auto">
-            <button className="w-full py-4 bg-[#FF6321] text-white font-bold rounded-2xl hover:bg-[#e5591e] transition-all active:scale-[0.98] shadow-sm shadow-orange-200 uppercase tracking-wider text-sm">
+            <button 
+              onClick={() => {
+                const event = new CustomEvent('open_chatbot', { 
+                  detail: { 
+                    carName: car.name,
+                    carId: car.id,
+                    message: `I am interested in booking the ${car.name}.`
+                  } 
+                });
+                window.dispatchEvent(event);
+              }}
+              className="w-full py-4 bg-[#FF6321] text-white font-bold rounded-2xl hover:bg-[#e5591e] transition-all active:scale-[0.98] shadow-sm shadow-orange-200 uppercase tracking-wider text-sm"
+            >
               Book Now
             </button>
           </div>

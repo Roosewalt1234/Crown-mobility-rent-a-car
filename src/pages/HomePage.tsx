@@ -89,8 +89,6 @@ export const HomePage: React.FC = () => {
         </div>
       </section>
 
-      <WavyTransition inverted />
-
       {/* Why Choose Us Section */}
       <section className="py-12 bg-black relative overflow-hidden">
         <div className="absolute top-0 right-0 w-1/2 h-full bg-[#D4AF37]/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2" />
@@ -165,7 +163,17 @@ export const HomePage: React.FC = () => {
                 Book your dream car today and enjoy exclusive benefits and 24/7 VIP support.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-                <button className="px-10 py-4 bg-[#D4AF37] text-black font-bold rounded-full hover:bg-[#B8962E] transition-all active:scale-95 text-sm uppercase tracking-widest">
+                <button 
+                  onClick={() => {
+                    const event = new CustomEvent('open_chatbot', { 
+                      detail: { 
+                        message: "I am ready to experience pure luxury and want to book a car!" 
+                      } 
+                    });
+                    window.dispatchEvent(event);
+                  }}
+                  className="px-10 py-4 bg-[#D4AF37] text-black font-bold rounded-full hover:bg-[#B8962E] transition-all active:scale-95 text-sm uppercase tracking-widest"
+                >
                   Book Now
                 </button>
                 <button className="px-10 py-4 bg-white/10 backdrop-blur-md text-white border border-white/20 font-bold rounded-full hover:bg-white/20 transition-all active:scale-95 text-sm uppercase tracking-widest">
