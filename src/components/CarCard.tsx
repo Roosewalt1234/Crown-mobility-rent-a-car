@@ -22,10 +22,14 @@ export const CarCard: React.FC<CarCardProps> = ({ car }) => {
       {/* Inner Card Content */}
       <div className="relative bg-white rounded-[calc(2rem-1.5px)] overflow-hidden shadow-sm group-hover:shadow-2xl group-hover:shadow-orange-200/40 flex flex-col w-full h-full font-sans transition-all duration-500">
         {/* Top Badges */}
-        <div className="px-4 py-2.5 flex justify-between items-center bg-white border-b border-gray-50">
-          <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[10px] font-bold uppercase tracking-tight">
-            {car.type}
-          </span>
+        <div className="px-4 py-2.5 flex justify-between items-center bg-white border-b border-gray-50 overflow-hidden">
+          <div className="flex flex-wrap gap-1">
+            {car.type?.toString().split(',').map((t, i) => (
+              <span key={i} className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[10px] font-bold uppercase tracking-tight whitespace-nowrap">
+                {t.trim()}
+              </span>
+            ))}
+          </div>
           {car.year && (
             <span className="px-2 py-0.5 bg-green-50 text-green-600 rounded text-[10px] font-bold tracking-tight">
               {car.year}

@@ -10,6 +10,7 @@ import { ChatsPage } from './pages/ChatsPage';
 import { KnowledgeBasePage } from './pages/KnowledgeBasePage';
 import { SettingsPage } from './pages/SettingsPage';
 import { AdminPage } from './pages/AdminPage';
+import { ManageVehiclesPage } from './pages/ManageVehiclesPage';
 import { AppLayout } from './components/AppLayout';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Toaster } from 'sonner';
@@ -56,6 +57,7 @@ function AppRoutes() {
         <Route index element={<Navigate to="/app/dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="chats" element={<ChatsPage />} />
+        <Route path="vehicles" element={<ManageVehiclesPage />} />
         <Route path="knowledge-base" element={<KnowledgeBasePage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="admin" element={<AdminPage />} />

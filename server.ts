@@ -70,12 +70,33 @@ async function startServer() {
 
   app.post("/api/messages", async (req, res) => {
     try {
-      const { chat_id, body, direction, is_ai_reply, contact_name, contact_phone } = req.body;
+      const { 
+        chat_id: raw_chat_id, 
+        body: raw_body, 
+        direction: raw_direction, 
+        is_ai_reply, 
+        contact_name, 
+        contact_phone,
+        // Support for common webhook formats (WAHA/n8n)
+        sender_number,
+        message,
+        from
+      } = req.body;
+
+      const chat_id = raw_chat_id || sender_number || from;
+      const body = raw_body || message;
+      const direction = raw_direction || 'incoming';
+
       console.log(`[API] Saving message for chat_id: ${chat_id}, direction: ${direction}`);
       
       if (!chat_id) {
-        console.error("[API] Error: chat_id is missing");
+        console.error("[API] Error: chat_id is missing in payload:", req.body);
         return res.status(400).json({ error: "chat_id is missing" });
+      }
+
+      if (!body) {
+        console.error("[API] Error: body/message is missing in payload:", req.body);
+        return res.status(400).json({ error: "message body is missing" });
       }
 
       // Upsert contact
@@ -86,7 +107,7 @@ async function startServer() {
          last_message_preview = $4,
          last_message_at = CURRENT_TIMESTAMP,
          unread_count = CASE WHEN $5 = 'incoming' THEN contacts.unread_count + 1 ELSE contacts.unread_count END`,
-        [chat_id, contact_name || 'Unknown', contact_phone || 'Unknown', body, direction]
+        [chat_id, contact_name || 'Unknown', contact_phone || chat_id || 'Unknown', body, direction]
       );
 
       // Insert message

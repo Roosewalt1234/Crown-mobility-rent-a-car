@@ -10,7 +10,8 @@ import {
   X,
   User as UserIcon,
   ChevronRight,
-  Shield
+  Shield,
+  Car
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'motion/react';
@@ -26,6 +27,7 @@ export const AppLayout: React.FC = () => {
   const navLinks = [
     { name: 'Dashboard', path: '/app/dashboard', icon: LayoutDashboard },
     { name: 'Chats', path: '/app/chats', icon: MessageSquare },
+    { name: 'Manage Vehicles', path: '/app/vehicles', icon: Car },
     { name: 'Knowledge Base', path: '/app/knowledge-base', icon: BookOpen },
     { name: 'Settings', path: '/app/settings', icon: Settings },
     { name: 'Admin', path: '/app/admin', icon: Shield },
