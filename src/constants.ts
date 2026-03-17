@@ -131,5 +131,65 @@ export const FLEET_STOCK: Car[] = [
     additionalMileageCharge: 5,
     includedFeatures: ['Air Suspension', 'Panoramic Roof', 'Cooler Box'],
     specs: { passengers: 5, transmission: 'Automatic', fuel: 'Diesel' }
+  },
+  {
+    id: '7',
+    name: 'Nissan Patrol V8 2024',
+    brand: 'Nissan',
+    type: 'SUV',
+    image: 'https://dzgyxvsewaxnztglnkrh.supabase.co/storage/v1/object/sign/web%20page%20images/Patrol-Crescent.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV85ZGFiZDU3Ny0wYTAyLTQyZjktYjcwMy01ZmQ0ZWYyN2U1YjMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJ3ZWIgcGFnZSBpbWFnZXMvUGF0cm9sLUNyZXNjZW50LnBuZyIsImlhdCI6MTc3MzQxNDUxMiwiZXhwIjoxODA0OTUwNTEyfQ.kaBz1ITyE_d5TxHTzQdjYV7W-p0PjArgyB7vMPiZgII',
+    description: 'The Hero of All Terrains. The Nissan Patrol combines legendary off-road capability with a premium, spacious interior.',
+    location: 'Dubai',
+    year: 2024,
+    region: 'GCC',
+    pricing: {
+      day: { original: 800, current: 650 },
+      week: { original: 5000, current: 4200 },
+      month: { original: 18000, current: 15000 }
+    },
+    mileageLimit: 250,
+    additionalMileageCharge: 5,
+    includedFeatures: ['V8 Engine', '7-Seater', 'Off-road mode'],
+    specs: { passengers: 7, transmission: 'Automatic', fuel: 'Petrol' }
+  },
+  {
+    id: '8',
+    name: 'Porsche 911 Carrera 2024',
+    brand: 'Porsche',
+    type: 'Sports',
+    image: 'https://dzgyxvsewaxnztglnkrh.supabase.co/storage/v1/object/sign/web%20page%20images/sports%20car-crescent.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV85ZGFiZDU3Ny0wYTAyLTQyZjktYjcwMy01ZmQ0ZWYyN2U1YjMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJ3ZWIgcGFnZSBpbWFnZXMvc3BvcnRzIGNhci1jcmVzY2VudC5wbmciLCJpYXQiOjE3NzM0MTQ3OTEsImV4cCI6MTgwNDk1MDc5MX0.SJ-0AnPzh-vWYNAVKCpc9T-PgFoPN9Aepjh6gYdkFMM',
+    description: 'The definitive sports car. Precision engineering meets timeless design for an unmatched driving experience.',
+    location: 'Dubai',
+    year: 2024,
+    region: 'GCC',
+    pricing: {
+      day: { original: 2500, current: 1900 },
+      week: { original: 15000, current: 12000 },
+      month: { original: 50000, current: 42000 }
+    },
+    mileageLimit: 200,
+    additionalMileageCharge: 10,
+    includedFeatures: ['Turbocharged Flat-6', 'Sport Chrono', 'Bose Sound'],
+    specs: { passengers: 2, transmission: 'Automatic', fuel: 'Petrol' }
+  },
+  {
+    id: '9',
+    name: 'Tesla Model 3 Performance 2024',
+    brand: 'Tesla',
+    type: 'Electric',
+    image: 'https://dzgyxvsewaxnztglnkrh.supabase.co/storage/v1/object/sign/web%20page%20images/tesla-crescent.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV85ZGFiZDU3Ny0wYTAyLTQyZjktYjcwMy01ZmQ0ZWYyN2U1YjMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJ3ZWIgcGFnZSBpbWFnZXMvdGVzbGEtY3Jlc2NlbnQucG5nIiwiaWF0IjoxNzczNDE1MzcyLCJleHAiOjE4MDQ5NTEzNzJ9.6OMXxTeKv7AF2fN1QEgF53nbMckGGNs0yvuj-jIdio0',
+    description: 'The future of driving. Blistering acceleration, cutting-edge technology, and zero emissions.',
+    location: 'Dubai',
+    year: 2024,
+    region: 'GCC',
+    pricing: {
+      day: { original: 500, current: 399 },
+      week: { original: 3000, current: 2500 },
+      month: { original: 10000, current: 8500 }
+    },
+    mileageLimit: 300,
+    additionalMileageCharge: 2,
+    includedFeatures: ['Autopilot', 'Supercharging', 'Premium Connectivity'],
+    specs: { passengers: 5, transmission: 'Automatic', fuel: 'Electric' }
   }
 ];

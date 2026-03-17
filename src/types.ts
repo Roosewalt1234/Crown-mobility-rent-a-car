@@ -2,7 +2,7 @@ export interface Car {
   id: string;
   name: string;
   brand: string;
-  type: 'Luxury' | 'Sports' | 'SUV' | 'Economy';
+  type: 'Luxury' | 'Sports' | 'SUV' | 'Economy' | 'Supercars' | 'Convertible' | 'Electric' | 'Driver Service';
   image: string;
   description?: string;
   location?: string;

@@ -21,7 +21,7 @@ export const HomePage: React.FC = () => {
                            !import.meta.env.VITE_SUPABASE_URL.startsWith('http');
 
       if (isPlaceholder) {
-        setCars(STATIC_FLEET_STOCK.slice(0, 6));
+        setCars(STATIC_FLEET_STOCK.slice(0, 9));
         setLoading(false);
         return;
       }
@@ -32,14 +32,14 @@ export const HomePage: React.FC = () => {
         if (data && data.length > 0) {
           setCars(data);
         } else if (data && data.length === 0) {
-          setCars(STATIC_FLEET_STOCK.slice(0, 6));
+          setCars(STATIC_FLEET_STOCK.slice(0, 9));
         } else {
-          setCars(STATIC_FLEET_STOCK.slice(0, 6));
+          setCars(STATIC_FLEET_STOCK.slice(0, 9));
         }
       } catch (err: any) {
         console.error('Supabase fetch failed:', err);
         setError('Showing available premium fleet.');
-        setCars(STATIC_FLEET_STOCK.slice(0, 6));
+        setCars(STATIC_FLEET_STOCK.slice(0, 9));
       } finally {
         setLoading(false);
       }
