@@ -11,27 +11,33 @@ export const wahaService = {
     }
 
     try {
-      const response = await fetch(`${wahaUrl}/api/sendText`, {
+      const url = `${wahaUrl.replace(/\/$/, '')}/api/sendText`;
+      const payload = {
+        chatId: chatId,
+        text: text,
+        session: sessionName,
+      };
+
+      console.log(`[WAHA-DEBUG] Sending to: ${url}`);
+      console.log(`[WAHA-DEBUG] Payload: ${JSON.stringify(payload)}`);
+
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': wahaKey ? `Bearer ${wahaKey}` : '',
         },
-        body: JSON.stringify({
-          chatId: chatId,
-          text: text,
-          session: sessionName,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(`[WAHA] Error sending message: ${response.status} ${errorText}`);
+        console.error(`[WAHA-DEBUG] Error response (${response.status}): ${errorText}`);
       } else {
-        console.log(`[WAHA] Message sent successfully to ${chatId}`);
+        console.log(`[WAHA-DEBUG] Message sent successfully to ${chatId}`);
       }
     } catch (error) {
-      console.error('[WAHA] Network error sending message:', error);
+      console.error('[WAHA-DEBUG] Network error sending message:', error);
     }
   }
 };
