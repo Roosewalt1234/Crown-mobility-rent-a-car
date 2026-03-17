@@ -1,8 +1,28 @@
-import React from 'react';
-import { Search, Calendar, MapPin, Car } from 'lucide-react';
-import { motion } from 'motion/react';
+import React, { useState, useRef } from 'react';
+import { Search, Calendar, MapPin, Car, ChevronDown } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 export const Hero = () => {
+  const [carType, setCarType] = useState('All Categories');
+  const [location, setLocation] = useState('Dubai Marina');
+  const [date, setDate] = useState('');
+  
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const dateInputRef = useRef<HTMLInputElement>(null);
+
+  const carTypes = ['All Categories', 'Luxury', 'Sports', 'SUV', 'Convertible'];
+  const locations = ['Dubai Marina', 'Downtown Dubai', 'DXB Airport', 'Palm Jumeirah', 'Abu Dhabi'];
+
+  const toggleDropdown = (name: string) => {
+    setActiveDropdown(activeDropdown === name ? null : name);
+  };
+
+  const handleDateClick = () => {
+    if (dateInputRef.current) {
+      dateInputRef.current.showPicker();
+    }
+  };
+
   return (
     <div className="relative h-screen w-full overflow-hidden">
       {/* Background Image with Overlay */}
@@ -39,40 +59,107 @@ export const Hero = () => {
           className="mt-12 w-full max-w-5xl bg-black/20 backdrop-blur-xl p-4 rounded-2xl border border-white/20 shadow-2xl"
         >
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="flex items-center gap-3 bg-white/5 p-4 rounded-xl border border-white/10">
-              <Car className="text-[#D4AF37]" size={20} />
-              <div className="text-left">
-                <p className="text-[10px] uppercase tracking-widest text-white/50">Car Type</p>
-                <select className="bg-transparent text-white text-sm outline-none w-full appearance-none">
-                  <option className="bg-black">All Categories</option>
-                  <option className="bg-black">Luxury</option>
-                  <option className="bg-black">Sports</option>
-                  <option className="bg-black">SUV</option>
-                </select>
-              </div>
+            {/* Car Type Selector */}
+            <div className="relative">
+              <motion.div 
+                whileHover={{ scale: 1.02, backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => toggleDropdown('carType')}
+                className="flex items-center justify-between gap-3 bg-white/5 p-4 rounded-xl border border-white/10 cursor-pointer transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <Car className="text-[#D4AF37]" size={20} />
+                  <div className="text-left">
+                    <p className="text-[10px] uppercase tracking-widest text-white/50">Car Type</p>
+                    <p className="text-white text-sm font-medium">{carType}</p>
+                  </div>
+                </div>
+                <ChevronDown size={16} className={`text-white/40 transition-transform duration-300 ${activeDropdown === 'carType' ? 'rotate-180' : ''}`} />
+              </motion.div>
+              
+              <AnimatePresence>
+                {activeDropdown === 'carType' && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className="absolute top-full left-0 right-0 mt-2 bg-black/90 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden z-50 shadow-2xl"
+                  >
+                    {carTypes.map((type) => (
+                      <div 
+                        key={type}
+                        onClick={() => { setCarType(type); setActiveDropdown(null); }}
+                        className="px-4 py-3 text-sm text-white hover:bg-[#D4AF37] hover:text-black transition-colors cursor-pointer text-left"
+                      >
+                        {type}
+                      </div>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
-            <div className="flex items-center gap-3 bg-white/5 p-4 rounded-xl border border-white/10">
-              <MapPin className="text-[#D4AF37]" size={20} />
-              <div className="text-left">
-                <p className="text-[10px] uppercase tracking-widest text-white/50">Pickup Location</p>
-                <select className="bg-transparent text-white text-sm outline-none w-full appearance-none">
-                  <option className="bg-black">Dubai Marina</option>
-                  <option className="bg-black">Downtown Dubai</option>
-                  <option className="bg-black">DXB Airport</option>
-                </select>
-              </div>
+            {/* Location Selector */}
+            <div className="relative">
+              <motion.div 
+                whileHover={{ scale: 1.02, backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => toggleDropdown('location')}
+                className="flex items-center justify-between gap-3 bg-white/5 p-4 rounded-xl border border-white/10 cursor-pointer transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <MapPin className="text-[#D4AF37]" size={20} />
+                  <div className="text-left">
+                    <p className="text-[10px] uppercase tracking-widest text-white/50">Pickup Location</p>
+                    <p className="text-white text-sm font-medium">{location}</p>
+                  </div>
+                </div>
+                <ChevronDown size={16} className={`text-white/40 transition-transform duration-300 ${activeDropdown === 'location' ? 'rotate-180' : ''}`} />
+              </motion.div>
+
+              <AnimatePresence>
+                {activeDropdown === 'location' && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className="absolute top-full left-0 right-0 mt-2 bg-black/90 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden z-50 shadow-2xl"
+                  >
+                    {locations.map((loc) => (
+                      <div 
+                        key={loc}
+                        onClick={() => { setLocation(loc); setActiveDropdown(null); }}
+                        className="px-4 py-3 text-sm text-white hover:bg-[#D4AF37] hover:text-black transition-colors cursor-pointer text-left"
+                      >
+                        {loc}
+                      </div>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
-            <div className="flex items-center gap-3 bg-white/5 p-4 rounded-xl border border-white/10">
+            {/* Date Selector */}
+            <motion.div 
+              whileHover={{ scale: 1.02, backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleDateClick}
+              className="flex items-center gap-3 bg-white/5 p-4 rounded-xl border border-white/10 cursor-pointer transition-colors"
+            >
               <Calendar className="text-[#D4AF37]" size={20} />
-              <div className="text-left">
+              <div className="text-left w-full">
                 <p className="text-[10px] uppercase tracking-widest text-white/50">Rental Date</p>
-                <input type="date" className="bg-transparent text-white text-sm outline-none w-full [color-scheme:dark]" />
+                <input 
+                  ref={dateInputRef}
+                  type="date" 
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="bg-transparent text-white text-sm outline-none w-full [color-scheme:dark] cursor-pointer" 
+                />
               </div>
-            </div>
+            </motion.div>
 
-            <button className="bg-[#D4AF37] text-black font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-[#B8962E] transition-all active:scale-95">
+            <button className="bg-[#D4AF37] text-black font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-[#B8962E] transition-all active:scale-95 shadow-lg shadow-[#D4AF37]/20">
               <Search size={20} />
               <span>Find Your Ride</span>
             </button>
@@ -87,10 +174,16 @@ export const Hero = () => {
             { label: 'UAE Locations', value: '12' },
             { label: 'Support', value: '24/7' },
           ].map((stat, i) => (
-            <div key={i} className="text-center">
+            <motion.div 
+              key={i} 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.4 + i * 0.1 }}
+              className="text-center"
+            >
               <p className="text-2xl md:text-3xl font-serif text-[#D4AF37]">{stat.value}</p>
               <p className="text-[10px] uppercase tracking-widest text-white/40 mt-1 font-bold">{stat.label}</p>
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>
