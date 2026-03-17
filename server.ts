@@ -19,6 +19,9 @@ async function startServer() {
 
   app.use(express.json());
 
+  console.log(`[STARTUP] WAHA_URL: ${process.env.WAHA_URL ? 'SET' : 'MISSING'}`);
+  console.log(`[STARTUP] WAHA_SESSION: ${process.env.WAHA_SESSION || 'default'}`);
+
   // Initialize Database
   initDb().then(() => {
     console.log("Database init process finished");
@@ -273,7 +276,7 @@ async function startServer() {
   }
 
   app.listen(Number(port), '0.0.0.0', () => {
-    console.log(`Server started on http://localhost:${port}`);
+    console.log(`[VERSION] Server v1.0.2 started on http://localhost:${port}`);
   });
 }
 
