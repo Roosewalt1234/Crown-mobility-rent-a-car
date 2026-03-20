@@ -279,24 +279,43 @@ async function startServer() {
         return res.status(500).json({ error: "Database configuration missing" });
       }
 
-      const { 
-        chat_id: raw_chat_id, 
-        body: raw_body, 
-        direction: raw_direction, 
-        is_ai_reply, 
-        contact_name, 
-        contact_phone,
-        // Support for common webhook formats (WAHA/n8n)
-        sender_number,
-        message,
-        from
-      } = req.body;
+      // 1. Extract fields, handling potential WAHA nesting
+      const event = req.body.event;
+      const payload = req.body.payload || req.body;
+      
+      const raw_chat_id = payload.chat_id || payload.chatId || payload.sender_number || payload.from || payload.to;
+      const raw_body = payload.body || payload.message || payload.text;
+      const raw_direction = payload.direction;
+      const is_ai_reply = req.body.is_ai_reply === true;
+      const contact_name = payload.contact_name || payload.sender?.name || payload.pushName;
+      const contact_phone = payload.contact_phone || payload.sender?.id || raw_chat_id;
 
-      const chat_id = normalizeChatId(raw_chat_id || sender_number || from);
-      const body = raw_body || message;
-      const direction = raw_direction || 'incoming';
+      // 2. Determine direction
+      // If direction is explicitly provided (e.g. from dashboard), use it.
+      // Otherwise, check WAHA fields: fromMe or event type
+      let direction = raw_direction;
+      if (!direction) {
+        if (event === 'message.sent' || payload.fromMe === true) {
+          direction = 'outgoing';
+        } else {
+          direction = 'incoming';
+        }
+      }
 
-      console.log(`[API] Saving message for chat_id: ${chat_id}, direction: ${direction}`);
+      // 3. Determine chat_id (the customer's ID)
+      // If it's outgoing from the phone, 'to' is the customer.
+      // If it's incoming, 'from' is the customer.
+      let chat_id_raw = raw_chat_id;
+      if (event === 'message.sent' || (direction === 'outgoing' && payload.fromMe === true)) {
+        chat_id_raw = payload.to || payload.chatId || raw_chat_id;
+      } else if (direction === 'incoming') {
+        chat_id_raw = payload.from || payload.chatId || raw_chat_id;
+      }
+      
+      const chat_id = normalizeChatId(chat_id_raw);
+      const body = raw_body;
+
+      console.log(`[API] Processing message for chat_id: ${chat_id}, direction: ${direction}`);
       
       if (!chat_id) {
         console.error("[API] Error: chat_id is missing in payload:", req.body);
@@ -308,7 +327,19 @@ async function startServer() {
         return res.status(400).json({ error: "message body is missing" });
       }
 
-      // Upsert contact
+      // 4. Avoid Duplicates (especially from WAHA sent webhooks for AI replies)
+      // Check if the exact same message was saved in the last 10 seconds
+      const recentCheck = await query(
+        "SELECT id FROM messages WHERE chat_id = $1 AND body = $2 AND created_at > NOW() - INTERVAL '10 seconds' LIMIT 1",
+        [chat_id, body]
+      );
+      
+      if (recentCheck.rows.length > 0) {
+        console.log(`[API] Duplicate message detected for ${chat_id}. Skipping save.`);
+        return res.json({ success: true, duplicate: true });
+      }
+
+      // 5. Upsert contact
       await query(
         `INSERT INTO contacts (chat_id, contact_name, contact_phone, last_message_preview, last_message_at)
          VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
@@ -319,10 +350,10 @@ async function startServer() {
         [chat_id, contact_name || 'Unknown', contact_phone || chat_id || 'Unknown', body, direction]
       );
 
-      // Insert message
+      // 6. Insert message
       const result = await query(
         "INSERT INTO messages (chat_id, body, direction, is_ai_reply) VALUES ($1, $2, $3, $4) RETURNING *",
-        [chat_id, body, direction, is_ai_reply === true]
+        [chat_id, body, direction, is_ai_reply]
       );
       
       const savedMessage = result.rows[0];
@@ -331,15 +362,17 @@ async function startServer() {
       // Send response to caller immediately to prevent timeouts
       res.json(savedMessage);
 
-      // --- Handle Outgoing Human Messages (Send to WhatsApp) ---
-      if (direction === 'outgoing' && !is_ai_reply) {
-        console.log(`[API] Human outgoing message detected. Sending to WAHA for ${chat_id}`);
+      // 7. --- Handle Outgoing Human Messages from Dashboard (Send to WhatsApp) ---
+      // If it's from the dashboard (raw_direction is set) and not an AI reply, send it.
+      // If it's a webhook (event is set), don't send it back to WAHA!
+      if (raw_direction === 'outgoing' && !is_ai_reply && !event) {
+        console.log(`[API] Dashboard outgoing message detected. Sending to WAHA for ${chat_id}`);
         wahaService.sendMessage(chat_id, body).catch(err => {
           console.error(`[API] Error sending human message to WAHA:`, err);
         });
       }
 
-      // --- AI Auto-Reply Logic (Background) ---
+      // 8. --- AI Auto-Reply Logic (Background) ---
       if (direction === 'incoming' && !is_ai_reply) {
         // Run AI logic in background without awaiting it for the HTTP response
         (async () => {
