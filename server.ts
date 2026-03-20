@@ -8,9 +8,20 @@ import { initDb, query } from "./src/lib/db.ts";
 import { chatWithAI } from "./src/services/geminiService.ts";
 import { fleetService } from "./src/services/fleetService.ts";
 import { wahaService } from "./src/services/wahaService.ts";
+import { createClient } from '@supabase/supabase-js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+function normalizeChatId(id: string): string {
+  if (!id) return "";
+  // Remove +, spaces, and ensure @c.us suffix if not present
+  let clean = id.replace(/\+/g, "").replace(/\s/g, "");
+  if (!clean.includes("@")) {
+    clean = `${clean}@c.us`;
+  }
+  return clean;
+}
 
 async function startServer() {
   const app = express();
@@ -65,6 +76,110 @@ async function startServer() {
     }
   });
 
+  app.get("/api/settings/:key", async (req, res) => {
+    try {
+      const { key } = req.params;
+      const result = await query("SELECT value FROM settings WHERE key = $1", [key]);
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: "Setting not found" });
+      }
+      res.json(result.rows[0].value);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.post("/api/settings/:key", async (req, res) => {
+    try {
+      const { key } = req.params;
+      const { value } = req.body;
+      await query(
+        "INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = $2",
+        [key, value]
+      );
+      res.json({ success: true, value });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.post("/api/migrate", async (req, res) => {
+    try {
+      const supabaseUrl = process.env.VITE_SUPABASE_URL;
+      const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
+
+      if (!supabaseUrl || !supabaseKey) {
+        return res.status(400).json({ error: "Supabase credentials missing" });
+      }
+
+      const supabase = createClient(supabaseUrl, supabaseKey);
+
+      // 1. Migrate fleet_stock
+      const { data: fleet } = await supabase.from('fleet_stock').select('*');
+      if (fleet) {
+        for (const item of fleet) {
+          await query(
+            `INSERT INTO fleet_stock (
+              vehicle_id, vehicle_make, vehicle_model, vehicle_year, 
+              fleet_type, vehicle_image_url, car_description, 
+              day_price, week_price, month_price, 
+              milage_limit, extra_km_charge, car_features
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+            ON CONFLICT (vehicle_id) DO UPDATE SET
+              vehicle_make = $2, vehicle_model = $3, vehicle_year = $4,
+              fleet_type = $5, vehicle_image_url = $6, car_description = $7,
+              day_price = $8, week_price = $9, month_price = $10,
+              milage_limit = $11, extra_km_charge = $12, car_features = $13`,
+            [
+              item.vehicle_id, item.vehicle_make, item.vehicle_model, item.vehicle_year, 
+              item.fleet_type, item.vehicle_image_url, item.car_description, 
+              item.day_price, item.week_price, item.month_price, 
+              item.milage_limit, item.extra_km_charge, item.car_features
+            ]
+          );
+        }
+      }
+
+      // 2. Migrate contacts
+      const { data: contacts } = await supabase.from('contacts').select('*');
+      if (contacts) {
+        for (const contact of contacts) {
+          await query(
+            `INSERT INTO contacts (chat_id, contact_name, contact_phone, last_message_preview, last_message_at, unread_count, status, human_takeover)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+             ON CONFLICT (chat_id) DO UPDATE SET
+             contact_name = $2, contact_phone = $3, last_message_preview = $4, last_message_at = $5, unread_count = $6, status = $7, human_takeover = $8`,
+            [
+              contact.chat_id, contact.contact_name, contact.contact_phone, 
+              contact.last_message_preview, contact.last_message_at, 
+              contact.unread_count, contact.status, contact.human_takeover
+            ]
+          );
+        }
+      }
+
+      // 3. Migrate messages
+      const { data: messages } = await supabase.from('messages').select('*');
+      if (messages) {
+        for (const msg of messages) {
+          await query(
+            `INSERT INTO messages (chat_id, body, direction, is_ai_reply, created_at, status)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             ON CONFLICT DO NOTHING`,
+            [msg.chat_id, msg.body, msg.direction, msg.is_ai_reply, msg.created_at, msg.status]
+          );
+        }
+      }
+
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error(err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   app.get("/api/contacts", async (req, res) => {
     try {
       const result = await query("SELECT * FROM contacts ORDER BY last_message_at DESC");
@@ -75,12 +190,78 @@ async function startServer() {
     }
   });
 
+  // Fleet API
+  app.get("/api/fleet", async (req, res) => {
+    try {
+      const result = await query("SELECT * FROM fleet_stock ORDER BY created_at DESC");
+      res.json(result.rows);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.post("/api/fleet", async (req, res) => {
+    try {
+      const { 
+        vehicle_id, vehicle_make, vehicle_model, vehicle_year, 
+        fleet_type, vehicle_image_url, car_description, 
+        day_price, week_price, month_price, 
+        milage_limit, extra_km_charge, car_features,
+        deposit_amount
+      } = req.body;
+      
+      // Handle both column names
+      const finalDeposit = deposit_amount ?? req.body['deposit - amount'] ?? 3000;
+
+      const result = await query(
+        `INSERT INTO fleet_stock (
+          vehicle_id, vehicle_make, vehicle_model, vehicle_year, 
+          fleet_type, vehicle_image_url, car_description, 
+          day_price, week_price, month_price, 
+          milage_limit, extra_km_charge, car_features,
+          deposit_amount
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        ON CONFLICT (vehicle_id) DO UPDATE SET
+          vehicle_make = $2, vehicle_model = $3, vehicle_year = $4,
+          fleet_type = $5, vehicle_image_url = $6, car_description = $7,
+          day_price = $8, week_price = $9, month_price = $10,
+          milage_limit = $11, extra_km_charge = $12, car_features = $13,
+          deposit_amount = $14
+        RETURNING *`,
+        [
+          vehicle_id || `v-${Date.now()}`, vehicle_make, vehicle_model, vehicle_year, 
+          fleet_type, vehicle_image_url, car_description, 
+          day_price, week_price, month_price, 
+          milage_limit, extra_km_charge, car_features,
+          finalDeposit
+        ]
+      );
+      res.json(result.rows[0]);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/fleet/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      await query("DELETE FROM fleet_stock WHERE id = $1 OR vehicle_id = $1", [id]);
+      res.json({ success: true });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.get("/api/messages/:chatId", async (req, res) => {
     try {
       const { chatId } = req.params;
+      const normalizedId = normalizeChatId(chatId);
       const result = await query(
         "SELECT * FROM messages WHERE chat_id = $1 ORDER BY created_at ASC",
-        [chatId]
+        [normalizedId]
       );
       res.json(result.rows);
     } catch (err) {
@@ -111,7 +292,7 @@ async function startServer() {
         from
       } = req.body;
 
-      const chat_id = raw_chat_id || sender_number || from;
+      const chat_id = normalizeChatId(raw_chat_id || sender_number || from);
       const body = raw_body || message;
       const direction = raw_direction || 'incoming';
 
@@ -150,6 +331,14 @@ async function startServer() {
       // Send response to caller immediately to prevent timeouts
       res.json(savedMessage);
 
+      // --- Handle Outgoing Human Messages (Send to WhatsApp) ---
+      if (direction === 'outgoing' && !is_ai_reply) {
+        console.log(`[API] Human outgoing message detected. Sending to WAHA for ${chat_id}`);
+        wahaService.sendMessage(chat_id, body).catch(err => {
+          console.error(`[API] Error sending human message to WAHA:`, err);
+        });
+      }
+
       // --- AI Auto-Reply Logic (Background) ---
       if (direction === 'incoming' && !is_ai_reply) {
         // Run AI logic in background without awaiting it for the HTTP response
@@ -157,9 +346,55 @@ async function startServer() {
           try {
             console.log(`[AI-DEBUG] Starting background process for ${chat_id}`);
             
+            // 0. Check DND and Global Auto-Reply
+            const settingsResult = await query("SELECT key, value FROM settings WHERE key IN ('dnd_config', 'general_config')");
+            const settings: any = {};
+            settingsResult.rows.forEach(r => settings[r.key] = r.value);
+            
+            const dndConfig = settings['dnd_config'];
+            const generalConfig = settings['general_config'];
+
+            if (generalConfig && generalConfig.autoReply === false) {
+              console.log(`[AI-DEBUG] Global Auto-Reply is disabled. Skipping AI.`);
+              return;
+            }
+            
+            if (dndConfig?.enabled) {
+              const now = new Date();
+              // Dubai Time (UTC+4)
+              const dubaiTime = new Date(now.getTime() + (4 * 60 * 60 * 1000));
+              const currentHour = dubaiTime.getUTCHours();
+              const currentMinute = dubaiTime.getUTCMinutes();
+              const currentTimeStr = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
+              
+              const [startH, startM] = dndConfig.start.split(':').map(Number);
+              const [endH, endM] = dndConfig.end.split(':').map(Number);
+              
+              const isDnd = (startH < endH) 
+                ? (currentTimeStr >= dndConfig.start && currentTimeStr <= dndConfig.end)
+                : (currentTimeStr >= dndConfig.start || currentTimeStr <= dndConfig.end);
+                
+              if (isDnd) {
+                console.log(`[AI-DEBUG] DND is active (${currentTimeStr}). Skipping AI response.`);
+                return;
+              }
+            }
+
             // 1. Check if human takeover is active
-            const contactResult = await query("SELECT human_takeover FROM contacts WHERE chat_id = $1", [chat_id]);
-            const isHumanTakeover = contactResult.rows[0]?.human_takeover || false;
+            const contactResult = await query("SELECT human_takeover, last_message_at FROM contacts WHERE chat_id = $1", [chat_id]);
+            const contact = contactResult.rows[0];
+            let isHumanTakeover = contact?.human_takeover || false;
+
+            // AUTO-RESET Takeover after 48 hours of inactivity
+            if (isHumanTakeover && contact?.last_message_at) {
+              const lastMsgTime = new Date(contact.last_message_at).getTime();
+              const fortyEightHours = 48 * 60 * 60 * 1000;
+              if (Date.now() - lastMsgTime > fortyEightHours) {
+                console.log(`[AI-DEBUG] Human takeover expired (48h). Resetting to false.`);
+                await query("UPDATE contacts SET human_takeover = false WHERE chat_id = $1", [chat_id]);
+                isHumanTakeover = false;
+              }
+            }
 
             if (!isHumanTakeover) {
               console.log(`[AI-DEBUG] Human takeover is OFF. Proceeding.`);
@@ -176,9 +411,10 @@ async function startServer() {
               }));
               console.log(`[AI-DEBUG] Context retrieved: ${history.length} messages.`);
 
-              // 3. Get fleet data
-              const fleetData = await fleetService.getFleetForAI();
-              console.log(`[AI-DEBUG] Fleet data retrieved: ${fleetData?.length || 0} cars.`);
+              // 3. Get fleet data directly from Railway DB
+              const fleetResult = await query("SELECT * FROM fleet_stock ORDER BY created_at DESC");
+              const fleetData = fleetResult.rows;
+              console.log(`[AI-DEBUG] Fleet data retrieved from Railway: ${fleetData?.length || 0} cars.`);
 
               // 4. Generate AI response
               console.log(`[AI-DEBUG] Calling Gemini AI...`);
@@ -186,6 +422,12 @@ async function startServer() {
 
               if (aiResponse && aiResponse.text) {
                 console.log(`[AI-DEBUG] AI generated text: ${aiResponse.text.substring(0, 30)}...`);
+
+                // If AI escalated, set human_takeover to true
+                if (aiResponse.escalated) {
+                  console.log(`[AI-DEBUG] AI requested escalation. Setting human_takeover = true for ${chat_id}`);
+                  await query("UPDATE contacts SET human_takeover = true WHERE chat_id = $1", [chat_id]);
+                }
 
                 // 5. Save AI response to DB
                 await query(
@@ -227,9 +469,69 @@ async function startServer() {
     }
   });
 
+  app.post("/api/revive/:chatId", async (req, res) => {
+    try {
+      const { chatId } = req.params;
+      const normalizedId = normalizeChatId(chatId);
+      
+      // 1. Get history
+      const historyResult = await query(
+        "SELECT body, direction, is_ai_reply FROM messages WHERE chat_id = $1 ORDER BY created_at DESC LIMIT 10",
+        [normalizedId]
+      );
+      
+      const history = historyResult.rows.reverse().map(m => ({
+        text: m.body,
+        role: m.direction === 'incoming' ? 'user' : 'model'
+      }));
+
+      // 2. Get fleet data
+      const fleetData = await fleetService.getFleetForAI();
+
+      // 3. Generate revive message
+      const revivePrompt = `
+        You are Sophie from Crescent Mobility. 
+        The customer has stopped replying. 
+        Based on the conversation history and our fleet, generate a SHORT, friendly, and personalized nudge to revive the conversation.
+        Maybe mention a car they liked or a special Ramadan offer.
+        Keep it under 30 words. Use emojis.
+      `;
+
+      const aiResponse = await chatWithAI(
+        [...history as any, { role: 'user', text: revivePrompt }], 
+        fleetData
+      );
+
+      if (aiResponse && aiResponse.text) {
+        // 4. Send via WAHA
+        await wahaService.sendMessage(chatId, aiResponse.text);
+
+        // 5. Save to DB
+        await query(
+          "INSERT INTO messages (chat_id, body, direction, is_ai_reply) VALUES ($1, $2, $3, $4)",
+          [chatId, aiResponse.text, 'outgoing', true]
+        );
+
+        // 6. Update contact
+        await query(
+          "UPDATE contacts SET last_message_preview = $1, last_message_at = CURRENT_TIMESTAMP WHERE chat_id = $2",
+          [aiResponse.text, chatId]
+        );
+
+        res.json({ success: true, message: aiResponse.text });
+      } else {
+        res.status(500).json({ error: "Failed to generate revive message" });
+      }
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.patch("/api/contacts/:chatId", async (req, res) => {
     try {
       const { chatId } = req.params;
+      const normalizedId = normalizeChatId(chatId);
       const { human_takeover, status, unread_count } = req.body;
       
       let updateFields = [];

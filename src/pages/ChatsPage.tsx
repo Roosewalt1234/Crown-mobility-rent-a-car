@@ -13,11 +13,13 @@ import {
   HandMetal,
   ToggleLeft as Toggle,
   ToggleRight,
-  MessageSquare
+  MessageSquare,
+  Sparkles,
+  Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
+import { toast } from 'sonner';
 
 interface Contact {
   id: string;
@@ -60,6 +62,8 @@ export const ChatsPage: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [filter, setFilter] = useState<'all' | 'ai' | 'human'>('all');
+  const [isReviving, setIsReviving] = useState(false);
   const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
   const [isLoading, setIsLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -157,10 +161,36 @@ export const ChatsPage: React.FC = () => {
     }
   };
 
-  const filteredContacts = contacts.filter(c => 
-    c.contact_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.contact_phone.includes(searchQuery)
-  );
+  const handleRevive = async () => {
+    if (!selectedContact) return;
+    setIsReviving(true);
+    try {
+      const res = await fetch(`/api/revive/${selectedContact.chat_id}`, {
+        method: 'POST'
+      });
+      if (res.ok) {
+        const data = await res.json();
+        toast.success('Revive message sent!');
+        fetchMessages(selectedContact.chat_id);
+      } else {
+        throw new Error('Failed to revive');
+      }
+    } catch (err) {
+      toast.error('Error sending revive message');
+      console.error(err);
+    } finally {
+      setIsReviving(false);
+    }
+  };
+
+  const filteredContacts = contacts.filter(c => {
+    const matchesSearch = c.contact_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         c.contact_phone.includes(searchQuery);
+    
+    if (filter === 'ai') return matchesSearch && !c.human_takeover;
+    if (filter === 'human') return matchesSearch && c.human_takeover;
+    return matchesSearch;
+  });
 
   return (
     <div className="h-[calc(100vh-120px)] flex bg-white rounded-[2.5rem] border border-slate-100 shadow-xl overflow-hidden">
@@ -190,6 +220,27 @@ export const ChatsPage: React.FC = () => {
                   className="w-full bg-white border border-slate-200 rounded-2xl py-3 pl-12 pr-4 text-sm focus:outline-none focus:border-[#2e7d32]/50 focus:ring-4 focus:ring-[#2e7d32]/5 transition-all shadow-sm"
                 />
               </div>
+
+              <div className="flex p-1 bg-slate-100 rounded-xl">
+                <button 
+                  onClick={() => setFilter('all')}
+                  className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${filter === 'all' ? 'bg-white text-[#2e7d32] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  All
+                </button>
+                <button 
+                  onClick={() => setFilter('ai')}
+                  className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${filter === 'ai' ? 'bg-white text-[#2e7d32] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  AI Mode
+                </button>
+                <button 
+                  onClick={() => setFilter('human')}
+                  className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${filter === 'human' ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  Human
+                </button>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto px-3 space-y-1">
@@ -214,14 +265,24 @@ export const ChatsPage: React.FC = () => {
                     )}
                   </div>
                   <div className="flex-1 text-left min-w-0">
-                    <div className="flex justify-between items-center mb-0.5">
-                      <h4 className="font-bold text-slate-900 truncate">{contact.contact_name}</h4>
-                      <span className="text-[10px] text-slate-400 font-medium">
-                        {new Date(contact.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
+                      <div className="flex justify-between items-center mb-0.5">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-bold text-slate-900 truncate">{contact.contact_name}</h4>
+                          {contact.human_takeover && (
+                            <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse shadow-[0_0_8px_rgba(249,115,22,0.5)]" />
+                          )}
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          {new Date(contact.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-slate-500 truncate flex-1">{contact.last_message_preview}</p>
+                        {new Date().getTime() - new Date(contact.last_message_at).getTime() > 24 * 60 * 60 * 1000 && (
+                          <span className="text-[9px] font-bold text-orange-400 uppercase ml-2">Inactive</span>
+                        )}
+                      </div>
                     </div>
-                    <p className="text-xs text-slate-500 truncate">{contact.last_message_preview}</p>
-                  </div>
                   {contact.unread_count > 0 && (
                     <div className="w-5 h-5 bg-[#2e7d32] text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-lg shadow-[#2e7d32]/20">
                       {contact.unread_count}
@@ -264,15 +325,28 @@ export const ChatsPage: React.FC = () => {
               </div>
               <div className="flex items-center gap-2 md:gap-4">
                 <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-full border border-slate-100">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">AI Bot</span>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider transition-colors ${!selectedContact.human_takeover ? 'text-[#2e7d32]' : 'text-slate-400'}`}>AI Bot</span>
                   <button 
                     onClick={() => toggleHumanTakeover(selectedContact.chat_id, selectedContact.human_takeover)}
-                    className={`transition-colors ${selectedContact.human_takeover ? 'text-slate-300' : 'text-[#2e7d32]'}`}
+                    className="relative w-12 h-6 rounded-full bg-slate-200 p-1 transition-colors duration-300"
                   >
-                    {selectedContact.human_takeover ? <Toggle size={32} /> : <ToggleRight size={32} />}
+                    <div className={`w-4 h-4 rounded-full shadow-sm transform transition-transform duration-300 ${
+                      selectedContact.human_takeover 
+                        ? 'translate-x-6 bg-orange-500' 
+                        : 'translate-x-0 bg-[#2e7d32]'
+                    }`} />
                   </button>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Manual</span>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider transition-colors ${selectedContact.human_takeover ? 'text-orange-600' : 'text-slate-400'}`}>Manual</span>
                 </div>
+                <button 
+                  onClick={handleRevive}
+                  disabled={isReviving}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-full border border-indigo-100 hover:bg-indigo-100 transition-all disabled:opacity-50"
+                  title="AI Revive: Send a personalized nudge to this customer"
+                >
+                  <Sparkles size={14} className={isReviving ? 'animate-spin' : ''} />
+                  <span className="text-[10px] font-bold uppercase tracking-wider">{isReviving ? 'Reviving...' : 'Revive'}</span>
+                </button>
                 <button className="p-2 text-slate-400 hover:text-[#2e7d32] transition-colors">
                   <Phone size={20} />
                 </button>

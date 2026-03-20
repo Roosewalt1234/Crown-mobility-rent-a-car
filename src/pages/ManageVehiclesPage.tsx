@@ -14,7 +14,6 @@ import {
   XCircle,
   MoreVertical
 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 
@@ -80,12 +79,9 @@ export const ManageVehiclesPage: React.FC = () => {
   const fetchVehicles = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('fleet_stock')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
+      const res = await fetch('/api/fleet');
+      if (!res.ok) throw new Error('Failed to fetch vehicles');
+      const data = await res.json();
       
       // Map data to handle potential 'deposit - amount' column name
       const mappedData = (data || []).map((v: any) => ({
@@ -138,22 +134,15 @@ export const ManageVehiclesPage: React.FC = () => {
         payload['deposit - amount'] = formData.deposit_amount;
       }
 
-      if (editingVehicle) {
-        const { error } = await supabase
-          .from('fleet_stock')
-          .update(payload)
-          .eq('vehicle_id', editingVehicle.vehicle_id);
-        
-        if (error) throw error;
-        toast.success('Vehicle updated successfully');
-      } else {
-        const { error } = await supabase
-          .from('fleet_stock')
-          .insert([formData]);
-        
-        if (error) throw error;
-        toast.success('Vehicle added successfully');
-      }
+      const res = await fetch('/api/fleet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      if (!res.ok) throw new Error('Failed to save vehicle');
+      
+      toast.success(editingVehicle ? 'Vehicle updated successfully' : 'Vehicle added successfully');
       
       setIsModalOpen(false);
       fetchVehicles();
@@ -168,12 +157,12 @@ export const ManageVehiclesPage: React.FC = () => {
     if (!window.confirm('Are you sure you want to delete this vehicle?')) return;
 
     try {
-      const { error } = await supabase
-        .from('fleet_stock')
-        .delete()
-        .eq('vehicle_id', id);
+      const res = await fetch(`/api/fleet/${id}`, {
+        method: 'DELETE'
+      });
 
-      if (error) throw error;
+      if (!res.ok) throw new Error('Failed to delete vehicle');
+      
       toast.success('Vehicle deleted successfully');
       fetchVehicles();
     } catch (error: any) {

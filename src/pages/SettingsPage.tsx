@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Settings as SettingsIcon, 
   Globe, 
@@ -10,21 +10,57 @@ import {
   Save,
   ExternalLink,
   Copy,
-  Check
+  Check,
+  Moon,
+  Clock,
+  Loader2
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { toast } from 'sonner';
 
 export const SettingsPage: React.FC = () => {
   const [copied, setCopied] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isMigrating, setIsMigrating] = useState(false);
   const [config, setConfig] = useState({
-    wahaUrl: 'https://api.waha.example.com',
-    wahaKey: '••••••••••••••••',
+    wahaUrl: '',
+    wahaKey: '',
     sessionName: 'default',
     escalationId: '971507172790@c.us',
     autoReply: true,
     notifications: true
   });
+
+  const [dndConfig, setDndConfig] = useState({
+    enabled: true,
+    start: '23:00',
+    end: '07:00'
+  });
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        // Fetch DND config
+        const dndRes = await fetch('/api/settings/dnd_config');
+        if (dndRes.ok) {
+          const data = await dndRes.json();
+          setDndConfig(data);
+        }
+
+        // Fetch general config
+        const configRes = await fetch('/api/settings/general_config');
+        if (configRes.ok) {
+          const data = await configRes.json();
+          setConfig(prev => ({ ...prev, ...data }));
+        }
+      } catch (err) {
+        console.error('Error fetching settings:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchSettings();
+  }, []);
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -33,11 +69,52 @@ export const SettingsPage: React.FC = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleSave = () => {
-    toast.success('Settings saved successfully');
+  const handleSave = async () => {
+    try {
+      // Save DND config
+      const dndRes = await fetch('/api/settings/dnd_config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: dndConfig })
+      });
+      
+      // Save general config
+      const configRes = await fetch('/api/settings/general_config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: config })
+      });
+      
+      if (dndRes.ok && configRes.ok) {
+        toast.success('All settings saved successfully');
+      } else {
+        throw new Error('Failed to save some settings');
+      }
+    } catch (err) {
+      toast.error('Error saving settings');
+      console.error(err);
+    }
   };
 
-  const webhookUrl = `https://your-project.supabase.co/functions/v1/waha-webhook?tenant_id=default`;
+  const handleMigrate = async () => {
+    setIsMigrating(true);
+    try {
+      const res = await fetch('/api/migrate', { method: 'POST' });
+      if (res.ok) {
+        toast.success('Migration completed successfully!');
+      } else {
+        const data = await res.json();
+        throw new Error(data.error || 'Migration failed');
+      }
+    } catch (err: any) {
+      toast.error('Migration error: ' + err.message);
+      console.error(err);
+    } finally {
+      setIsMigrating(false);
+    }
+  };
+
+  const webhookUrl = `${window.location.origin}/api/messages`;
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -135,6 +212,57 @@ export const SettingsPage: React.FC = () => {
           </div>
         </section>
 
+        {/* Do Not Disturb Configuration */}
+        <section className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-6">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 rounded-lg bg-purple-50 text-purple-600">
+              <Moon size={20} />
+            </div>
+            <h3 className="text-lg font-bold text-slate-900">Do Not Disturb (DND)</h3>
+          </div>
+          
+          <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+            <div className="space-y-1">
+              <p className="text-sm font-bold text-slate-900">DND Mode</p>
+              <p className="text-xs text-slate-500">When enabled, Sophie will not send automated messages during the set hours.</p>
+            </div>
+            <button 
+              onClick={() => setDndConfig({...dndConfig, enabled: !dndConfig.enabled})}
+              className={`w-12 h-6 rounded-full transition-all relative ${dndConfig.enabled ? 'bg-purple-600' : 'bg-slate-300'}`}
+            >
+              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${dndConfig.enabled ? 'left-7' : 'left-1'}`} />
+            </button>
+          </div>
+
+          <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 transition-opacity duration-300 ${dndConfig.enabled ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-slate-400 ml-1">Start Time (Dubai Time)</label>
+              <div className="relative">
+                <input 
+                  type="time" 
+                  value={dndConfig.start}
+                  onChange={(e) => setDndConfig({...dndConfig, start: e.target.value})}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 text-sm focus:outline-none focus:border-purple-600/50 transition-all"
+                />
+                <Clock className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-slate-400 ml-1">End Time (Dubai Time)</label>
+              <div className="relative">
+                <input 
+                  type="time" 
+                  value={dndConfig.end}
+                  onChange={(e) => setDndConfig({...dndConfig, end: e.target.value})}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 text-sm focus:outline-none focus:border-purple-600/50 transition-all"
+                />
+                <Clock className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+              </div>
+            </div>
+          </div>
+          <p className="text-[10px] text-slate-400 italic">Note: Times are based on Dubai (UTC+4) timezone.</p>
+        </section>
+
         {/* Webhook Information */}
         <section className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-6">
           <div className="flex items-center gap-3 mb-2">
@@ -184,6 +312,24 @@ export const SettingsPage: React.FC = () => {
             <div className="flex justify-between items-center py-3">
               <span className="text-sm text-slate-500">Last Synced</span>
               <span className="text-sm font-bold text-slate-900">2 minutes ago</span>
+            </div>
+            
+            <div className="pt-4 border-t border-slate-50">
+              <button 
+                onClick={handleMigrate}
+                disabled={isMigrating}
+                className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-indigo-50 text-indigo-600 rounded-2xl font-bold hover:bg-indigo-100 transition-all disabled:opacity-50"
+              >
+                {isMigrating ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Database size={18} />
+                )}
+                {isMigrating ? 'Migrating Data...' : 'Migrate from Supabase'}
+              </button>
+              <p className="text-[10px] text-slate-400 mt-2 text-center">
+                Copies fleet, contacts, and messages from Supabase to Railway.
+              </p>
             </div>
           </div>
         </section>

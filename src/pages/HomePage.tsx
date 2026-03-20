@@ -16,28 +16,16 @@ export const HomePage: React.FC = () => {
 
   useEffect(() => {
     const fetchCars = async () => {
-      const isPlaceholder = import.meta.env.VITE_SUPABASE_URL === undefined || 
-                           import.meta.env.VITE_SUPABASE_URL === '' ||
-                           !import.meta.env.VITE_SUPABASE_URL.startsWith('http');
-
-      if (isPlaceholder) {
-        setCars(STATIC_FLEET_STOCK);
-        setLoading(false);
-        return;
-      }
-
       try {
         setLoading(true);
         const data = await fleetService.getFeaturedCars();
         if (data && data.length > 0) {
           setCars(data);
-        } else if (data && data.length === 0) {
-          setCars(STATIC_FLEET_STOCK);
         } else {
           setCars(STATIC_FLEET_STOCK);
         }
       } catch (err: any) {
-        console.error('Supabase fetch failed:', err);
+        console.error('Railway fetch failed:', err);
         setError('Showing available premium fleet.');
         setCars(STATIC_FLEET_STOCK);
       } finally {

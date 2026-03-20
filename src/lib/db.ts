@@ -46,6 +46,48 @@ export const initDb = async () => {
         status TEXT DEFAULT 'sent'
       );
     `);
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value JSONB NOT NULL
+      );
+    `);
+
+    // Initialize default settings if not exists
+    await query(`
+      INSERT INTO settings (key, value)
+      VALUES ('dnd_config', '{"enabled": true, "start": "23:00", "end": "07:00"}')
+      ON CONFLICT (key) DO NOTHING;
+    `);
+
+    await query(`
+      INSERT INTO settings (key, value)
+      VALUES ('general_config', '{"wahaUrl": "", "wahaKey": "", "sessionName": "default", "escalationId": "971507172790@c.us", "autoReply": true, "notifications": true}')
+      ON CONFLICT (key) DO NOTHING;
+    `);
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS fleet_stock (
+        id SERIAL PRIMARY KEY,
+        vehicle_id TEXT UNIQUE,
+        vehicle_make TEXT NOT NULL,
+        vehicle_model TEXT NOT NULL,
+        vehicle_year TEXT NOT NULL,
+        fleet_type TEXT,
+        vehicle_image_url TEXT,
+        car_description TEXT,
+        day_price NUMERIC,
+        week_price NUMERIC,
+        month_price NUMERIC,
+        milage_limit NUMERIC,
+        extra_km_charge NUMERIC,
+        car_features TEXT,
+        deposit_amount NUMERIC,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
     console.log('Database tables verified/created successfully');
   } catch (err) {
     console.error('DATABASE INITIALIZATION ERROR:', err);
