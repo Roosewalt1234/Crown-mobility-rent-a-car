@@ -57,6 +57,8 @@ function AppRoutes() {
         <Route index element={<Navigate to="/app/dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="chats" element={<ChatsPage />} />
+        <Route path="chats/ai" element={<ChatsPage mode="ai" />} />
+        <Route path="chats/manual" element={<ChatsPage mode="manual" />} />
         <Route path="vehicles" element={<ManageVehiclesPage />} />
         <Route path="knowledge-base" element={<KnowledgeBasePage />} />
         <Route path="settings" element={<SettingsPage />} />

@@ -55,14 +55,16 @@ const MOCK_MESSAGES: Message[] = [
   { id: 'm3', chat_id: '123@c.us', body: 'I want to rent the G63 for 3 days.', direction: 'incoming', is_ai_reply: false, created_at: new Date(Date.now() - 3600000).toISOString(), status: 'read' },
 ];
 
-export const ChatsPage: React.FC = () => {
+export const ChatsPage: React.FC<{ mode?: 'ai' | 'manual' | 'all' }> = ({ mode = 'all' }) => {
   const { user } = useAuth();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [filter, setFilter] = useState<'all' | 'ai' | 'human'>('all');
+  const [filter, setFilter] = useState<'all' | 'ai' | 'human'>(
+    mode === 'ai' ? 'ai' : mode === 'manual' ? 'human' : 'all'
+  );
   const [isReviving, setIsReviving] = useState(false);
   const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
   const [isLoading, setIsLoading] = useState(true);
@@ -102,6 +104,10 @@ export const ChatsPage: React.FC = () => {
       console.error('Error fetching messages:', err);
     }
   };
+
+  useEffect(() => {
+    setFilter(mode === 'ai' ? 'ai' : mode === 'manual' ? 'human' : 'all');
+  }, [mode]);
 
   useEffect(() => {
     fetchContacts();
@@ -231,7 +237,9 @@ export const ChatsPage: React.FC = () => {
           >
             <div className="p-6 space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-slate-900">Chats</h2>
+                <h2 className="text-2xl font-bold text-slate-900">
+                  {mode === 'ai' ? 'AI Chats' : mode === 'manual' ? 'Manual Chats' : 'All Chats'}
+                </h2>
                 <div className="p-2 rounded-full bg-white border border-slate-100 text-slate-400 hover:text-slate-600 cursor-pointer shadow-sm">
                   <MoreVertical size={20} />
                 </div>
@@ -247,26 +255,28 @@ export const ChatsPage: React.FC = () => {
                 />
               </div>
 
-              <div className="flex p-1 bg-slate-100 rounded-xl border border-slate-200 shadow-inner">
-                <button 
-                  onClick={() => setFilter('all')}
-                  className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${filter === 'all' ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-700'}`}
-                >
-                  All
-                </button>
-                <button 
-                  onClick={() => setFilter('ai')}
-                  className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${filter === 'ai' ? 'bg-white text-[#2e7d32] shadow-sm ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-700'}`}
-                >
-                  AI Mode
-                </button>
-                <button 
-                  onClick={() => setFilter('human')}
-                  className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${filter === 'human' ? 'bg-white text-orange-600 shadow-sm ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-700'}`}
-                >
-                  Manual
-                </button>
-              </div>
+              {mode === 'all' && (
+                <div className="flex p-1 bg-slate-100 rounded-xl border border-slate-200 shadow-inner">
+                  <button 
+                    onClick={() => setFilter('all')}
+                    className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${filter === 'all' ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-700'}`}
+                  >
+                    All
+                  </button>
+                  <button 
+                    onClick={() => setFilter('ai')}
+                    className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${filter === 'ai' ? 'bg-white text-[#2e7d32] shadow-sm ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-700'}`}
+                  >
+                    AI Mode
+                  </button>
+                  <button 
+                    onClick={() => setFilter('human')}
+                    className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${filter === 'human' ? 'bg-white text-orange-600 shadow-sm ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-700'}`}
+                  >
+                    Manual
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="flex-1 overflow-y-auto px-3 space-y-1">

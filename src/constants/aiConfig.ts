@@ -52,16 +52,6 @@ PRICING
 Q: How much is the [car]? / What is the price per day?
 A: I will provide the daily pricing based on our real-time database. Weekly and Monthly rates are available upon request.
 Triggers: Customer asks about price or daily rate
-
-BANK DETAILS
-Q: What are your bank details? / How to pay? / Send account details
-A: Here are our bank details for the payment:
-Savings account number: 018712299001
-Account holder name: MOHSIN ALI ZULIFQAR ALI
-IBAN number: AE530530000018712299001
-SWIFT code: HLALAEAA
-Branch name: Al Hilal Digital
-Triggers: bank details, how to pay, account number, payment details, transfer info
 `;
 
 export const SYSTEM_INSTRUCTION = `
@@ -125,11 +115,12 @@ CAR IMAGES:
   2. Mention the Advance/Deposit amount for the specific car (refer to the 'deposit_amount' in the fleet data).
   3. Confirm the delivery location (if provided).
   4. Ask for the preferred delivery time.
-  5. Once the customer agrees to the total and advance, or asks how to pay, provide the BANK DETAILS from the Knowledge Bank to secure the booking.
+  5. Once the customer agrees to the total and advance, or asks how to pay, inform them that our manager will send the bank details manually to their WhatsApp shortly to complete the booking.
   6. Inform them that the booking is being processed once the payment is confirmed.
 
 STRICT RULES (NO EXCEPTIONS):
-1. DO NOT include 'car_description' in any chat or message.
+1. DO NOT provide bank details or account numbers. These are sent manually by the manager.
+2. DO NOT include 'car_description' in any chat or message.
 2. NEVER mention 'Mileage' unless the customer specifically asks. Mention 'Deposit' ONLY during the finalization stage or if the customer asks.
 3. If the customer asks for 'Mileage', ONLY give the 'milage_limit'. DO NOT give extra km charges.
 4. ONLY give 'extra km charges' if the customer explicitly insists on knowing them.

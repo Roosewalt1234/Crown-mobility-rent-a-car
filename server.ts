@@ -36,8 +36,15 @@ async function startServer() {
   console.log(`[STARTUP] WAHA_SESSION: ${process.env.WAHA_SESSION || 'default'}`);
 
   // Initialize Database
-  initDb().then(() => {
+  initDb().then(async () => {
     console.log("Database init process finished");
+    // Cleanup: Deactivate any bank-related knowledge base entries
+    try {
+      await query("UPDATE knowledge_base SET is_active = false WHERE question ILIKE '%bank%' OR question ILIKE '%account%' OR answer ILIKE '%bank%' OR answer ILIKE '%account%'");
+      console.log("[CLEANUP] Deactivated bank-related knowledge base entries");
+    } catch (err) {
+      console.error("[CLEANUP] Failed to deactivate bank-related entries:", err);
+    }
   }).catch(err => {
     console.error("Database init process failed", err);
   });

@@ -26,7 +26,8 @@ export const AppLayout: React.FC = () => {
 
   const navLinks = [
     { name: 'Dashboard', path: '/app/dashboard', icon: LayoutDashboard },
-    { name: 'Chats', path: '/app/chats', icon: MessageSquare },
+    { name: 'AI Chat', path: '/app/chats/ai', icon: MessageSquare },
+    { name: 'Manual Chat', path: '/app/chats/manual', icon: MessageSquare },
     { name: 'Manage Vehicles', path: '/app/vehicles', icon: Car },
     { name: 'Knowledge Base', path: '/app/knowledge-base', icon: BookOpen },
     { name: 'Settings', path: '/app/settings', icon: Settings },
