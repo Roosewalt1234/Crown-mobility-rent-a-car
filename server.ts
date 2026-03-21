@@ -754,6 +754,73 @@ async function startServer() {
     }
   });
 
+  app.get("/api/stats", async (req, res) => {
+    try {
+      // 1. Basic Stats
+      const messageStats = await query(`
+        SELECT 
+          COUNT(*)::int as total,
+          COUNT(*) FILTER (WHERE direction = 'incoming')::int as incoming,
+          COUNT(*) FILTER (WHERE direction = 'outgoing')::int as outgoing,
+          COUNT(*) FILTER (WHERE is_ai_reply = TRUE)::int as ai
+        FROM messages
+      `);
+
+      const contactStats = await query(`
+        SELECT 
+          COUNT(*)::int as total,
+          COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '24 hours')::int as new_24h,
+          COUNT(*) FILTER (WHERE status = 'converted')::int as converted,
+          COUNT(*) FILTER (WHERE human_takeover = TRUE)::int as human_takeover
+        FROM contacts
+      `);
+
+      // 2. Bar Chart Data (Last 7 days)
+      const barData = await query(`
+        SELECT 
+          TO_CHAR(created_at, 'Dy') as name,
+          COUNT(*) FILTER (WHERE direction = 'incoming')::int as incoming,
+          COUNT(*) FILTER (WHERE direction = 'outgoing')::int as outgoing,
+          COUNT(*) FILTER (WHERE is_ai_reply = TRUE)::int as ai,
+          DATE_TRUNC('day', created_at) as day_order
+        FROM messages
+        WHERE created_at > NOW() - INTERVAL '7 days'
+        GROUP BY name, day_order
+        ORDER BY day_order ASC
+      `);
+
+      // 3. Pie Chart Data (Status Breakdown)
+      const pieData = await query(`
+        SELECT 
+          status as name,
+          COUNT(*)::int as value
+        FROM contacts
+        GROUP BY status
+      `);
+
+      // 4. Donut Chart Data (AI vs Human)
+      const donutData = await query(`
+        SELECT 
+          CASE WHEN is_ai_reply THEN 'AI Replies' ELSE 'Human Replies' END as name,
+          COUNT(*)::int as value
+        FROM messages
+        WHERE direction = 'outgoing'
+        GROUP BY name
+      `);
+
+      res.json({
+        messages: messageStats.rows[0],
+        contacts: contactStats.rows[0],
+        barData: barData.rows,
+        pieData: pieData.rows,
+        donutData: donutData.rows
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Knowledge Base API
   app.get("/api/knowledge-base", async (req, res) => {
     try {

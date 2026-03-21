@@ -33,7 +33,8 @@ export const initDb = async () => {
         status TEXT DEFAULT 'new',
         human_takeover BOOLEAN DEFAULT FALSE,
         revive_sent_at TIMESTAMP WITH TIME ZONE,
-        manager_notified_at TIMESTAMP WITH TIME ZONE
+        manager_notified_at TIMESTAMP WITH TIME ZONE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
     
@@ -41,6 +42,7 @@ export const initDb = async () => {
     await query(`
       ALTER TABLE contacts ADD COLUMN IF NOT EXISTS revive_sent_at TIMESTAMP WITH TIME ZONE;
       ALTER TABLE contacts ADD COLUMN IF NOT EXISTS manager_notified_at TIMESTAMP WITH TIME ZONE;
+      ALTER TABLE contacts ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
     `).catch(() => {});
 
     await query(`

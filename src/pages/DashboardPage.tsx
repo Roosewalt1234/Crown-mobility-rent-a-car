@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   MessageSquare, 
   ArrowUpRight, 
@@ -9,7 +9,8 @@ import {
   CheckCircle2, 
   HandMetal,
   TrendingUp,
-  Clock
+  Clock,
+  Loader2
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -28,43 +29,65 @@ import {
 } from 'recharts';
 import { motion } from 'motion/react';
 
-const MOCK_BAR_DATA = [
-  { name: 'Mon', incoming: 45, outgoing: 32, ai: 28 },
-  { name: 'Tue', incoming: 52, outgoing: 41, ai: 35 },
-  { name: 'Wed', incoming: 48, outgoing: 38, ai: 31 },
-  { name: 'Thu', incoming: 61, outgoing: 45, ai: 42 },
-  { name: 'Fri', incoming: 55, outgoing: 42, ai: 38 },
-  { name: 'Sat', incoming: 32, outgoing: 25, ai: 20 },
-  { name: 'Sun', incoming: 28, outgoing: 20, ai: 18 },
-];
-
-const MOCK_PIE_DATA = [
-  { name: 'New', value: 400, color: '#94a3b8' },
-  { name: 'Active', value: 300, color: '#3b82f6' },
-  { name: 'Converted', value: 200, color: '#22c55e' },
-];
-
-const MOCK_DONUT_DATA = [
-  { name: 'AI Replies', value: 65, color: '#8b5cf6' },
-  { name: 'Human Replies', value: 35, color: '#10b981' },
-];
+const COLORS = ['#94a3b8', '#3b82f6', '#22c55e', '#f59e0b', '#ef4444'];
 
 export const DashboardPage: React.FC = () => {
   const [period, setPeriod] = useState('This Week');
+  const [isLoading, setIsLoading] = useState(true);
+  const [data, setData] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await fetch('/api/stats');
+        if (res.ok) {
+          const stats = await res.json();
+          setData(stats);
+        }
+      } catch (err) {
+        console.error('Error fetching stats:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchStats();
+    const interval = setInterval(fetchStats, 30000); // Refresh every 30s
+    return () => clearInterval(interval);
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="h-[60vh] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-[#2e7d32]" />
+      </div>
+    );
+  }
 
   const stats = [
-    { label: 'Total Messages', value: '1,284', icon: MessageSquare, color: 'text-blue-500', bg: 'bg-blue-50', trend: '+12%' },
-    { label: 'Incoming', value: '742', icon: ArrowDownLeft, color: 'text-green-500', bg: 'bg-green-50', trend: '+8%' },
-    { label: 'Outgoing', value: '542', icon: ArrowUpRight, color: 'text-purple-500', bg: 'bg-purple-50', trend: '+15%' },
-    { label: 'AI Replies', value: '382', icon: Bot, color: 'text-indigo-500', bg: 'bg-indigo-50', trend: '70%', isBadge: true },
+    { label: 'Total Messages', value: data?.messages?.total?.toLocaleString() || '0', icon: MessageSquare, color: 'text-blue-500', bg: 'bg-blue-50', trend: '+12%' },
+    { label: 'Incoming', value: data?.messages?.incoming?.toLocaleString() || '0', icon: ArrowDownLeft, color: 'text-green-500', bg: 'bg-green-50', trend: '+8%' },
+    { label: 'Outgoing', value: data?.messages?.outgoing?.toLocaleString() || '0', icon: ArrowUpRight, color: 'text-purple-500', bg: 'bg-purple-50', trend: '+15%' },
+    { label: 'AI Replies', value: data?.messages?.ai?.toLocaleString() || '0', icon: Bot, color: 'text-indigo-500', bg: 'bg-indigo-50', trend: `${Math.round((data?.messages?.ai / (data?.messages?.outgoing || 1)) * 100)}%`, isBadge: true },
   ];
 
   const contactStats = [
-    { label: 'Total Contacts', value: '452', icon: Users, color: 'text-slate-500', bg: 'bg-slate-50' },
-    { label: 'New Contacts', value: '24', icon: UserPlus, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-    { label: 'Converted', value: '18%', icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' },
-    { label: 'Human Takeovers', value: '12', icon: HandMetal, color: 'text-orange-500', bg: 'bg-orange-50' },
+    { label: 'Total Contacts', value: data?.contacts?.total?.toLocaleString() || '0', icon: Users, color: 'text-slate-500', bg: 'bg-slate-50' },
+    { label: 'New (24h)', value: data?.contacts?.new_24h?.toLocaleString() || '0', icon: UserPlus, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+    { label: 'Converted', value: data?.contacts?.converted?.toLocaleString() || '0', icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' },
+    { label: 'Human Takeovers', value: data?.contacts?.human_takeover?.toLocaleString() || '0', icon: HandMetal, color: 'text-orange-500', bg: 'bg-orange-50' },
   ];
+
+  const pieData = data?.pieData?.map((item: any, index: number) => ({
+    ...item,
+    color: COLORS[index % COLORS.length]
+  })) || [];
+
+  const donutData = data?.donutData?.map((item: any) => ({
+    ...item,
+    color: item.name === 'AI Replies' ? '#8b5cf6' : '#10b981'
+  })) || [];
+
+  const aiRate = Math.round((data?.messages?.ai / (data?.messages?.outgoing || 1)) * 100);
 
   return (
     <div className="space-y-8">
@@ -162,7 +185,7 @@ export const DashboardPage: React.FC = () => {
           </div>
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={MOCK_BAR_DATA}>
+              <BarChart data={data?.barData || []}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis 
                   dataKey="name" 
@@ -191,11 +214,11 @@ export const DashboardPage: React.FC = () => {
         {/* AI vs Human */}
         <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm">
           <h3 className="text-lg font-bold text-slate-900 mb-8">AI vs Human Replies</h3>
-          <div className="h-[300px] w-full flex items-center justify-center">
+          <div className="h-[300px] w-full flex items-center justify-center relative">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={MOCK_DONUT_DATA}
+                  data={donutData}
                   cx="50%"
                   cy="50%"
                   innerRadius={80}
@@ -203,7 +226,7 @@ export const DashboardPage: React.FC = () => {
                   paddingAngle={8}
                   dataKey="value"
                 >
-                  {MOCK_DONUT_DATA.map((entry, index) => (
+                  {donutData.map((entry: any, index: number) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
@@ -212,7 +235,7 @@ export const DashboardPage: React.FC = () => {
               </PieChart>
             </ResponsiveContainer>
             <div className="absolute flex flex-col items-center">
-              <span className="text-3xl font-bold text-slate-900">65%</span>
+              <span className="text-3xl font-bold text-slate-900">{aiRate}%</span>
               <span className="text-xs text-slate-400 uppercase tracking-widest font-bold">AI Rate</span>
             </div>
           </div>
@@ -223,7 +246,7 @@ export const DashboardPage: React.FC = () => {
           <h3 className="text-lg font-bold text-slate-900 mb-8">New Contacts Growth</h3>
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={MOCK_BAR_DATA}>
+              <LineChart data={data?.barData || []}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis 
                   dataKey="name" 
@@ -258,14 +281,14 @@ export const DashboardPage: React.FC = () => {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={MOCK_PIE_DATA}
+                  data={pieData}
                   cx="50%"
                   cy="50%"
                   outerRadius={100}
                   dataKey="value"
                   label
                 >
-                  {MOCK_PIE_DATA.map((entry, index) => (
+                  {pieData.map((entry: any, index: number) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
