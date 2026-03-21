@@ -41,6 +41,8 @@ interface Message {
   is_ai_reply: boolean;
   created_at: string;
   status: string;
+  media_url?: string;
+  media_type?: string;
 }
 
 const MOCK_CONTACTS: Contact[] = [
@@ -451,7 +453,24 @@ export const ChatsPage: React.FC<{ mode?: 'ai' | 'manual' | 'all' }> = ({ mode =
                             Manual Reply
                           </div>
                         )}
-                        <p className="text-sm leading-relaxed">{msg.body}</p>
+                        {msg.media_url ? (
+                          <div className="space-y-2">
+                            <img 
+                              src={msg.media_url} 
+                              alt="Media content" 
+                              className="rounded-lg max-w-full h-auto border border-slate-100 shadow-sm"
+                              referrerPolicy="no-referrer"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x300?text=Image+Not+Found';
+                              }}
+                            />
+                            {msg.body && msg.body !== "Image sent" && (
+                              <p className="text-sm leading-relaxed">{msg.body}</p>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-sm leading-relaxed">{msg.body}</p>
+                        )}
                       </div>
                       <div className={`flex items-center gap-2 text-[10px] text-slate-400 ${isOutgoing ? 'justify-end' : 'justify-start'}`}>
                         <Clock size={10} />

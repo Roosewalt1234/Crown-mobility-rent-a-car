@@ -655,7 +655,14 @@ async function startServer() {
                     console.log(`[AI-DEBUG] Found \${allImages.length} images for vehicle \${vehicleId}.`);
                     
                     for (const url of allImages) {
-                      await wahaService.sendImage(chat_id, url);
+                      console.log(`[AI-DEBUG] Sending image to WAHA: ${url}`);
+                      try {
+                        await wahaService.sendImage(chat_id, url);
+                        console.log(`[AI-DEBUG] Image sent successfully to WAHA.`);
+                      } catch (wahaErr) {
+                        console.error(`[AI-DEBUG] Failed to send image to WAHA:`, wahaErr);
+                      }
+                      
                       // Save image message to DB
                       await query(
                         "INSERT INTO messages (chat_id, body, direction, is_ai_reply, media_url, media_type) VALUES ($1, $2, $3, $4, $5, $6)",
