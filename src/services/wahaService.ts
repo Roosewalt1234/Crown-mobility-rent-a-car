@@ -71,7 +71,10 @@ export const wahaService = {
         session: sessionName,
       };
 
-      await fetch(url, {
+      console.log(`[WAHA-DEBUG] Sending image to: \${url}`);
+      console.log(`[WAHA-DEBUG] Payload: \${JSON.stringify(payload)}`);
+
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -80,7 +83,13 @@ export const wahaService = {
         },
         body: JSON.stringify(payload),
       });
-      console.log(`[WAHA-DEBUG] Image sent to ${chatId}: ${imageUrl}`);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[WAHA-DEBUG] Error sending image (\${response.status}): \${errorText}`);
+      } else {
+        console.log(`[WAHA-DEBUG] Image sent successfully to \${chatId}: \${imageUrl}`);
+      }
     } catch (error) {
       console.error('[WAHA-DEBUG] Error sending image:', error);
     }

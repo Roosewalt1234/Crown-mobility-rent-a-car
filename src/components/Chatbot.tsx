@@ -74,6 +74,7 @@ export const Chatbot = () => {
     const checkTakeover = async () => {
       try {
         const res = await fetch('/api/contacts');
+        if (!res.ok) return; // Ignore non-OK responses during restarts
         const contacts = await res.json();
         const contact = contacts.find((c: any) => c.chat_id === id);
         if (contact) {
@@ -84,7 +85,12 @@ export const Chatbot = () => {
           }
         }
       } catch (err) {
-        console.error('Error checking takeover:', err);
+        // Only log if it's not a transient fetch error
+        if (err instanceof TypeError && err.message === 'Failed to fetch') {
+          // Silent during restarts
+        } else {
+          console.error('Error checking takeover:', err);
+        }
       }
     };
 
@@ -215,7 +221,21 @@ export const Chatbot = () => {
       return;
     }
 
-    const aiResponse = await chatWithAI(newMessages, fleetData, kbData, language);
+    // Call server-side AI chat endpoint
+    let aiResponse;
+    try {
+      const res = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: newMessages, fleetData, kbData, language })
+      });
+      if (!res.ok) throw new Error('Failed to fetch AI response');
+      aiResponse = await res.json();
+    } catch (err) {
+      console.error('Error calling AI chat endpoint:', err);
+      aiResponse = { text: "I'm sorry, I'm having trouble connecting to our system. Please try again later! 😊", escalated: false };
+    }
+
     const modelMessage: Message = { role: 'model', text: aiResponse.text };
     setMessages(prev => [...prev, modelMessage]);
     setIsLoading(false);
@@ -244,9 +264,20 @@ export const Chatbot = () => {
 
     // Only speak if user used voice input
     if (isVoice && autoSpeak) {
-      const audioBase64 = await generateSpeech(aiResponse.text, language);
-      if (audioBase64) {
-        playBase64Audio(audioBase64);
+      try {
+        const res = await fetch('/api/ai/speech', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: aiResponse.text, language })
+        });
+        if (res.ok) {
+          const { audio } = await res.json();
+          if (audio) {
+            playBase64Audio(audio);
+          }
+        }
+      } catch (err) {
+        console.error('Error calling AI speech endpoint:', err);
       }
     }
 

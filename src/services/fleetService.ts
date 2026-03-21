@@ -39,6 +39,10 @@ export const fleetService = {
 
   async getFleetForAI(): Promise<any[]> {
     try {
+      if (typeof window === 'undefined') {
+        console.warn('[FLEET-SERVICE] getFleetForAI called from server-side. This should be avoided; use direct DB query instead.');
+        return [];
+      }
       const res = await fetch('/api/fleet');
       if (!res.ok) throw new Error('Failed to fetch fleet');
       return await res.json();

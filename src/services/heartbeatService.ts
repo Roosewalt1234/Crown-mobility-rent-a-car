@@ -81,7 +81,8 @@ export const heartbeatService = {
       }));
 
       // 2. Get fleet and KB
-      const fleetData = await fleetService.getFleetForAI();
+      const fleetResult = await query("SELECT * FROM fleet_stock ORDER BY created_at DESC");
+      const fleetData = fleetResult.rows;
       const kbResult = await query("SELECT * FROM knowledge_base WHERE is_active = true");
       const kbData = kbResult.rows;
 

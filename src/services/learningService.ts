@@ -1,10 +1,17 @@
 import { query } from "../lib/db.ts";
 import { GoogleGenAI, Type } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+const getAI = () => {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    console.warn("[AI-DEBUG] GEMINI_API_KEY is not set in process.env. Learning features will fail.");
+  }
+  return new GoogleGenAI({ apiKey: apiKey || "" });
+};
 
 export const learningService = {
   async analyzeManualChat(chatId: string) {
+    const ai = getAI();
     try {
       // 1. Get recent messages
       const messagesResult = await query(

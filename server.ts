@@ -5,7 +5,7 @@ import fs from "fs";
 import { fileURLToPath } from "url";
 import { createServer as createViteServer } from "vite";
 import { initDb, query } from "./src/lib/db.ts";
-import { chatWithAI } from "./src/services/geminiService.ts";
+import { chatWithAI, generateSpeech } from "./src/services/geminiService.ts";
 import { fleetService } from "./src/services/fleetService.ts";
 import { wahaService } from "./src/services/wahaService.ts";
 import { learningService } from "./src/services/learningService.ts";
@@ -254,6 +254,28 @@ async function startServer() {
       res.json({ success: true });
     } catch (err) {
       console.error(err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.post("/api/ai/speech", async (req, res) => {
+    try {
+      const { text, language } = req.body;
+      const audioBase64 = await generateSpeech(text, language);
+      res.json({ audio: audioBase64 });
+    } catch (err) {
+      console.error("[API] Error in POST /api/ai/speech:", err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.post("/api/ai/chat", async (req, res) => {
+    try {
+      const { messages, fleetData, kbData, language } = req.body;
+      const aiResponse = await chatWithAI(messages, fleetData, kbData, language);
+      res.json(aiResponse);
+    } catch (err) {
+      console.error("[API] Error in POST /api/ai/chat:", err);
       res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -544,15 +566,36 @@ async function startServer() {
 
                 // 8. If AI requested to send images
                 const anyAiResponse = aiResponse as any;
-                if (anyAiResponse.sendImages && anyAiResponse.imageArgs?.image_urls) {
-                  console.log(`[AI-DEBUG] AI requested to send ${anyAiResponse.imageArgs.image_urls.length} images.`);
-                  for (const url of anyAiResponse.imageArgs.image_urls) {
-                    await wahaService.sendImage(chat_id, url);
-                    // Save image message to DB
-                    await query(
-                      "INSERT INTO messages (chat_id, body, direction, is_ai_reply, media_url, media_type) VALUES ($1, $2, $3, $4, $5, $6)",
-                      [chat_id, "Image sent", 'outgoing', true, url, 'image/jpeg']
-                    );
+                if (anyAiResponse.sendImages && anyAiResponse.imageArgs?.vehicle_id) {
+                  const vehicleId = anyAiResponse.imageArgs.vehicle_id;
+                  console.log(`[AI-DEBUG] AI requested to send images for vehicle: \${vehicleId}`);
+                  
+                  // Fetch images from DB
+                  const vehicleResult = await query(
+                    "SELECT vehicle_image_url, vehicle_images FROM fleet_stock WHERE vehicle_id = $1",
+                    [vehicleId]
+                  );
+                  
+                  if (vehicleResult.rows.length > 0) {
+                    const vehicle = vehicleResult.rows[0];
+                    const images = typeof vehicle.vehicle_images === 'string' 
+                      ? JSON.parse(vehicle.vehicle_images) 
+                      : (vehicle.vehicle_images || []);
+                    
+                    const allImages = [vehicle.vehicle_image_url, ...images].filter(Boolean);
+                    
+                    console.log(`[AI-DEBUG] Found \${allImages.length} images for vehicle \${vehicleId}.`);
+                    
+                    for (const url of allImages) {
+                      await wahaService.sendImage(chat_id, url);
+                      // Save image message to DB
+                      await query(
+                        "INSERT INTO messages (chat_id, body, direction, is_ai_reply, media_url, media_type) VALUES ($1, $2, $3, $4, $5, $6)",
+                        [chat_id, "Image sent", 'outgoing', true, url, 'image/jpeg']
+                      );
+                    }
+                  } else {
+                    console.warn(`[AI-DEBUG] Vehicle \${vehicleId} not found in database.`);
                   }
                 }
               } else {

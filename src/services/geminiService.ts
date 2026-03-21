@@ -2,9 +2,16 @@ import { GoogleGenAI, Type, Modality } from "@google/genai";
 import { Message } from "../types";
 import { SYSTEM_INSTRUCTION, KNOWLEDGE_BANK } from "../constants/aiConfig";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+const getAI = () => {
+  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.GEMINI_KEY;
+  if (!apiKey && typeof window === 'undefined') {
+    console.warn("[AI-DEBUG] GEMINI_API_KEY is not set in process.env. AI features will fail.");
+  }
+  return new GoogleGenAI({ apiKey: apiKey || "" });
+};
 
 export async function generateSpeech(text: string, language: string = 'English'): Promise<string | null> {
+  const ai = getAI();
   try {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-preview-tts",
@@ -57,17 +64,13 @@ const sendCarImagesTool = {
         type: Type.STRING,
         description: "The unique ID of the vehicle.",
       },
-      image_urls: {
-        type: Type.ARRAY,
-        items: { type: Type.STRING },
-        description: "The list of image URLs to send.",
-      },
     },
-    required: ["vehicle_id", "image_urls"],
+    required: ["vehicle_id"],
   },
 };
 
 export async function chatWithAI(messages: Message[], fleetData?: any[], kbData?: any[], language: string = 'English') {
+  const ai = getAI();
   try {
     let dynamicInstruction = SYSTEM_INSTRUCTION;
     
@@ -87,7 +90,12 @@ export async function chatWithAI(messages: Message[], fleetData?: any[], kbData?
 
     if (fleetData && fleetData.length > 0) {
       const fleetString = fleetData.map(car => {
-        const images = Array.isArray(car.vehicle_images) ? car.vehicle_images : [];
+        let images = [];
+        try {
+          images = typeof car.vehicle_images === 'string' ? JSON.parse(car.vehicle_images) : (car.vehicle_images || []);
+        } catch (e) {
+          console.warn(`[AI-DEBUG] Failed to parse vehicle_images for ${car.vehicle_id}:`, e);
+        }
         const allImages = [car.vehicle_image_url, ...images].filter(Boolean);
         
         return `- ${car.vehicle_make} ${car.vehicle_model} (${car.vehicle_year}): ` +
@@ -112,7 +120,7 @@ export async function chatWithAI(messages: Message[], fleetData?: any[], kbData?
         let text = m.text;
         if (m.media_url) {
           const type = m.media_type?.split('/')[0]?.toUpperCase() || 'MEDIA';
-          text = `[USER SENT A ${type} DOCUMENT] ${text || ''}`;
+          text = `[USER SENT A ${type}] ${text || ''}`;
         }
         return {
           role: m.role === 'user' ? 'user' : 'model',
