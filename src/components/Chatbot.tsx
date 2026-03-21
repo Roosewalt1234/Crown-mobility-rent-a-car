@@ -22,6 +22,7 @@ export const Chatbot = () => {
   const [isHumanTakeover, setIsHumanTakeover] = useState(false);
   const [lastInputWasVoice, setLastInputWasVoice] = useState(false);
   const [language, setLanguage] = useState('English');
+  const [autoReplyEnabled, setAutoReplyEnabled] = useState(true);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
@@ -57,6 +58,13 @@ export const Chatbot = () => {
         if (kbRes.ok) {
           const kb = await kbRes.json();
           setKbData(kb.filter((e: any) => e.is_active));
+        }
+
+        // Fetch general config for autoReply setting
+        const configRes = await fetch('/api/settings/general_config');
+        if (configRes.ok) {
+          const config = await configRes.json();
+          setAutoReplyEnabled(config.autoReply !== false);
         }
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -201,8 +209,8 @@ export const Chatbot = () => {
       console.error('Error saving user message:', err);
     }
 
-    // If human takeover is active, don't trigger AI
-    if (isHumanTakeover) {
+    // If human takeover is active or auto-reply is disabled, don't trigger AI
+    if (isHumanTakeover || !autoReplyEnabled) {
       setIsLoading(false);
       return;
     }

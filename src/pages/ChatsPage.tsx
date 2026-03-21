@@ -98,6 +98,15 @@ export const ChatsPage: React.FC = () => {
 
   useEffect(() => {
     if (selectedContact) {
+      const updated = contacts.find(c => c.chat_id === selectedContact.chat_id);
+      if (updated && JSON.stringify(updated) !== JSON.stringify(selectedContact)) {
+        setSelectedContact(updated);
+      }
+    }
+  }, [contacts, selectedContact?.chat_id]);
+
+  useEffect(() => {
+    if (selectedContact) {
       fetchMessages(selectedContact.chat_id);
       const interval = setInterval(() => fetchMessages(selectedContact.chat_id), 3000);
       return () => clearInterval(interval);
@@ -325,45 +334,45 @@ export const ChatsPage: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2 md:gap-4">
-                <div className="hidden sm:flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 shadow-inner">
+              <div className="flex items-center gap-1 md:gap-4">
+                <div className="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 shadow-inner">
                   <button 
                     onClick={() => !selectedContact.human_takeover ? null : toggleHumanTakeover(selectedContact.chat_id, true)}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-300 ${
+                    className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 rounded-lg transition-all duration-300 ${
                       !selectedContact.human_takeover 
                         ? 'bg-white text-[#2e7d32] shadow-sm ring-1 ring-slate-200' 
                         : 'text-slate-500 hover:text-slate-700'
                     }`}
                   >
                     <Bot size={14} className={!selectedContact.human_takeover ? 'animate-pulse' : ''} />
-                    <span className="text-[10px] font-bold uppercase tracking-wider">AI Mode</span>
+                    <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider">AI</span>
                   </button>
                   <button 
                     onClick={() => selectedContact.human_takeover ? null : toggleHumanTakeover(selectedContact.chat_id, false)}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-300 ${
+                    className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 rounded-lg transition-all duration-300 ${
                       selectedContact.human_takeover 
                         ? 'bg-white text-orange-600 shadow-sm ring-1 ring-slate-200' 
                         : 'text-slate-500 hover:text-slate-700'
                     }`}
                   >
                     <User size={14} />
-                    <span className="text-[10px] font-bold uppercase tracking-wider">Manual</span>
+                    <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider">Manual</span>
                   </button>
                 </div>
                 
                 <button 
                   onClick={handleRevive}
                   disabled={isReviving}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-full border border-indigo-100 hover:bg-indigo-100 transition-all disabled:opacity-50 shadow-sm"
+                  className="flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-full border border-indigo-100 hover:bg-indigo-100 transition-all disabled:opacity-50 shadow-sm"
                   title="AI Revive: Send a personalized nudge to this customer"
                 >
                   <Sparkles size={14} className={isReviving ? 'animate-spin' : ''} />
-                  <span className="text-[10px] font-bold uppercase tracking-wider">{isReviving ? 'Revive' : 'Revive'}</span>
+                  <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider">Revive</span>
                 </button>
-                <button className="p-2 text-slate-400 hover:text-[#2e7d32] transition-colors">
+                <button className="hidden sm:block p-2 text-slate-400 hover:text-[#2e7d32] transition-colors">
                   <Phone size={20} />
                 </button>
-                <button className="p-2 text-slate-400 hover:text-[#2e7d32] transition-colors">
+                <button className="hidden sm:block p-2 text-slate-400 hover:text-[#2e7d32] transition-colors">
                   <Video size={20} />
                 </button>
                 <button className="p-2 text-slate-400 hover:text-slate-600">

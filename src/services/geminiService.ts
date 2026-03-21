@@ -81,7 +81,8 @@ export async function chatWithAI(messages: Message[], fleetData?: any[], kbData?
       contents: messages.map(m => {
         let text = m.text;
         if (m.media_url) {
-          text = `[USER SENT A ${m.media_type?.toUpperCase() || 'MEDIA'} DOCUMENT] ${text || ''}`;
+          const type = m.media_type?.split('/')[0]?.toUpperCase() || 'MEDIA';
+          text = `[USER SENT A ${type} DOCUMENT] ${text || ''}`;
         }
         return {
           role: m.role === 'user' ? 'user' : 'model',

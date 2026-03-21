@@ -398,10 +398,27 @@ async function startServer() {
             settingsResult.rows.forEach(r => settings[r.key] = r.value);
             
             const dndConfig = settings['dnd_config'];
-            const generalConfig = settings['general_config'];
+            let generalConfig = settings['general_config'];
 
-            if (generalConfig && generalConfig.autoReply === false) {
+            // Parse if it's a string (sometimes happens with JSONB in pg)
+            if (typeof generalConfig === 'string') {
+              try {
+                generalConfig = JSON.parse(generalConfig);
+              } catch (e) {
+                console.error(`[AI-DEBUG] Failed to parse generalConfig:`, e);
+              }
+            }
+
+            console.log(`[AI-DEBUG] generalConfig:`, JSON.stringify(generalConfig));
+
+            if (generalConfig && (generalConfig.autoReply === false || generalConfig.autoReply === 'false')) {
               console.log(`[AI-DEBUG] Global Auto-Reply is disabled. Skipping AI.`);
+              return;
+            }
+
+            // Skip AI for web users on the server side (handled by Chatbot.tsx)
+            if (chat_id.startsWith('user_')) {
+              console.log(`[AI-DEBUG] Web user message. Skipping server-side AI auto-reply.`);
               return;
             }
             
@@ -642,7 +659,7 @@ async function startServer() {
         return res.status(400).json({ error: "No fields to update" });
       }
 
-      values.push(chatId);
+      values.push(normalizedId);
       const q = `UPDATE contacts SET ${updateFields.join(", ")} WHERE chat_id = $${i} RETURNING *`;
       const result = await query(q, values);
       res.json(result.rows[0]);
