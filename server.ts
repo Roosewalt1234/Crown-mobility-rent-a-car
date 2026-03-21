@@ -650,9 +650,9 @@ async function startServer() {
                       ? JSON.parse(vehicle.vehicle_images) 
                       : (vehicle.vehicle_images || []);
                     
-                    const allImages = [vehicle.vehicle_image_url, ...images].filter(Boolean);
+                    const allImages = Array.from(new Set([vehicle.vehicle_image_url, ...images].filter(Boolean)));
                     
-                    console.log(`[AI-DEBUG] Found \${allImages.length} images for vehicle \${vehicleId}.`);
+                    console.log(`[AI-DEBUG] Found ${allImages.length} unique images for vehicle ${vehicleId}.`);
                     
                     for (const url of allImages) {
                       console.log(`[AI-DEBUG] Sending image to WAHA: ${url}`);
@@ -668,6 +668,9 @@ async function startServer() {
                         "INSERT INTO messages (chat_id, body, direction, is_ai_reply, media_url, media_type) VALUES ($1, $2, $3, $4, $5, $6)",
                         [chat_id, "Image sent", 'outgoing', true, url, 'image/jpeg']
                       );
+
+                      // Small delay between images
+                      await new Promise(resolve => setTimeout(resolve, 1000));
                     }
                   } else {
                     console.warn(`[AI-DEBUG] Vehicle \${vehicleId} not found in database.`);
