@@ -472,6 +472,12 @@ async function startServer() {
               console.log(`[AI-DEBUG] Calling Gemini AI...`);
               const aiResponse = await chatWithAI(history as any, fleetData, kbData);
 
+              // If AI failed (returned fallback message), don't send it automatically
+              if (aiResponse && aiResponse.text && aiResponse.text.includes("trouble connecting")) {
+                console.warn(`[AI-DEBUG] Skipping auto-reply for ${chat_id} due to AI connection error.`);
+                return;
+              }
+
               if (aiResponse && aiResponse.text) {
                 console.log(`[AI-DEBUG] AI generated text: ${aiResponse.text.substring(0, 30)}...`);
 

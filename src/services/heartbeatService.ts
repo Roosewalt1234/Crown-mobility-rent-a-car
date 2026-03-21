@@ -69,6 +69,12 @@ export const heartbeatService = {
         kbData
       );
 
+      // If AI failed (returned fallback message), don't send it to customer
+      if (aiResponse && aiResponse.text && aiResponse.text.includes("trouble connecting")) {
+        console.warn(`[HEARTBEAT] Skipping revival for ${chatId} due to AI connection error.`);
+        return;
+      }
+
       if (aiResponse && aiResponse.text) {
         // If AI escalated during revival, set human_takeover to true
         if (aiResponse.escalated) {

@@ -95,6 +95,11 @@ export async function chatWithAI(messages: Message[], fleetData?: any[], kbData?
       },
     });
 
+    if (!response || !response.candidates || response.candidates.length === 0) {
+      console.error("[AI-DEBUG] Empty response from Gemini API");
+      throw new Error("Empty response from Gemini API");
+    }
+
     // Check for function calls
     const functionCalls = response.functionCalls;
     if (functionCalls && functionCalls.length > 0) {
@@ -116,7 +121,7 @@ export async function chatWithAI(messages: Message[], fleetData?: any[], kbData?
   } catch (error) {
     console.error("Gemini Error:", error);
     return {
-      text: "I'm having trouble connecting right now. Please try again later.",
+      text: "I'm sorry, I'm having a bit of trouble connecting to our system right now. Please try again in a moment! 😊",
       escalated: false
     };
   }
