@@ -8,6 +8,7 @@ import { initDb, query } from "./src/lib/db.ts";
 import { chatWithAI } from "./src/services/geminiService.ts";
 import { fleetService } from "./src/services/fleetService.ts";
 import { wahaService } from "./src/services/wahaService.ts";
+import { learningService } from "./src/services/learningService.ts";
 import { createClient } from '@supabase/supabase-js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -314,24 +315,27 @@ async function startServer() {
       
       const chat_id = normalizeChatId(chat_id_raw);
       const body = raw_body;
+      const has_media = payload.hasMedia || payload.media || !!payload.mediaUrl;
+      const media_url = payload.mediaUrl || payload.url;
+      const media_type = payload.mediaType || payload.mimetype;
 
-      console.log(`[API] Processing message for chat_id: ${chat_id}, direction: ${direction}`);
+      console.log(`[API] Processing message for chat_id: ${chat_id}, direction: ${direction}, has_media: ${has_media}`);
       
       if (!chat_id) {
         console.error("[API] Error: chat_id is missing in payload:", req.body);
         return res.status(400).json({ error: "chat_id is missing" });
       }
 
-      if (!body) {
-        console.error("[API] Error: body/message is missing in payload:", req.body);
-        return res.status(400).json({ error: "message body is missing" });
+      // If no body and no media, then it's an invalid message
+      if (!body && !has_media) {
+        console.error("[API] Error: body/message and media are missing in payload:", req.body);
+        return res.status(400).json({ error: "message body or media is missing" });
       }
 
-      // 4. Avoid Duplicates (especially from WAHA sent webhooks for AI replies)
-      // Check if the exact same message was saved in the last 10 seconds
+      // 4. Avoid Duplicates
       const recentCheck = await query(
-        "SELECT id FROM messages WHERE chat_id = $1 AND body = $2 AND created_at > NOW() - INTERVAL '10 seconds' LIMIT 1",
-        [chat_id, body]
+        "SELECT id FROM messages WHERE chat_id = $1 AND (body = $2 OR media_url = $3) AND created_at > NOW() - INTERVAL '10 seconds' LIMIT 1",
+        [chat_id, body || '', media_url || '']
       );
       
       if (recentCheck.rows.length > 0) {
@@ -340,6 +344,7 @@ async function startServer() {
       }
 
       // 5. Upsert contact
+      const preview = body || (has_media ? `[${media_type || 'Media'}]` : 'New Message');
       await query(
         `INSERT INTO contacts (chat_id, contact_name, contact_phone, last_message_preview, last_message_at)
          VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
@@ -347,13 +352,13 @@ async function startServer() {
          last_message_preview = $4,
          last_message_at = CURRENT_TIMESTAMP,
          unread_count = CASE WHEN $5 = 'incoming' THEN contacts.unread_count + 1 ELSE contacts.unread_count END`,
-        [chat_id, contact_name || 'Unknown', contact_phone || chat_id || 'Unknown', body, direction]
+        [chat_id, contact_name || 'Unknown', contact_phone || chat_id || 'Unknown', preview, direction]
       );
 
       // 6. Insert message
       const result = await query(
-        "INSERT INTO messages (chat_id, body, direction, is_ai_reply) VALUES ($1, $2, $3, $4) RETURNING *",
-        [chat_id, body, direction, is_ai_reply]
+        "INSERT INTO messages (chat_id, body, direction, is_ai_reply, media_url, media_type) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
+        [chat_id, body, direction, is_ai_reply, media_url, media_type]
       );
       
       const savedMessage = result.rows[0];
@@ -369,6 +374,13 @@ async function startServer() {
         console.log(`[API] Dashboard outgoing message detected. Sending to WAHA for ${chat_id}`);
         wahaService.sendMessage(chat_id, body).catch(err => {
           console.error(`[API] Error sending human message to WAHA:`, err);
+        });
+      }
+
+      // --- Trigger AI Learning Analysis for ANY manual outgoing message ---
+      if (direction === 'outgoing' && !is_ai_reply) {
+        learningService.analyzeManualChat(chat_id).catch(err => {
+          console.error(`[LEARNING] Error analyzing manual chat:`, err);
         });
       }
 
@@ -434,13 +446,15 @@ async function startServer() {
               
               // 2. Get context (last 10 messages)
               const historyResult = await query(
-                "SELECT body, direction, is_ai_reply FROM messages WHERE chat_id = $1 ORDER BY created_at DESC LIMIT 10",
+                "SELECT body, direction, is_ai_reply, media_url, media_type FROM messages WHERE chat_id = $1 ORDER BY created_at DESC LIMIT 10",
                 [chat_id]
               );
               
               const history = historyResult.rows.reverse().map(m => ({
                 text: m.body,
-                role: m.direction === 'incoming' ? 'user' : 'model'
+                role: m.direction === 'incoming' ? 'user' : 'model',
+                media_url: m.media_url,
+                media_type: m.media_type
               }));
               console.log(`[AI-DEBUG] Context retrieved: ${history.length} messages.`);
 
@@ -449,9 +463,13 @@ async function startServer() {
               const fleetData = fleetResult.rows;
               console.log(`[AI-DEBUG] Fleet data retrieved from Railway: ${fleetData?.length || 0} cars.`);
 
-              // 4. Generate AI response
+              // 4. Get Knowledge Base data
+              const kbResult = await query("SELECT * FROM knowledge_base WHERE is_active = true");
+              const kbData = kbResult.rows;
+
+              // 5. Generate AI response
               console.log(`[AI-DEBUG] Calling Gemini AI...`);
-              const aiResponse = await chatWithAI(history as any, fleetData);
+              const aiResponse = await chatWithAI(history as any, fleetData, kbData);
 
               if (aiResponse && aiResponse.text) {
                 console.log(`[AI-DEBUG] AI generated text: ${aiResponse.text.substring(0, 30)}...`);
@@ -509,17 +527,21 @@ async function startServer() {
       
       // 1. Get history
       const historyResult = await query(
-        "SELECT body, direction, is_ai_reply FROM messages WHERE chat_id = $1 ORDER BY created_at DESC LIMIT 10",
+        "SELECT body, direction, is_ai_reply, media_url, media_type FROM messages WHERE chat_id = $1 ORDER BY created_at DESC LIMIT 10",
         [normalizedId]
       );
       
       const history = historyResult.rows.reverse().map(m => ({
         text: m.body,
-        role: m.direction === 'incoming' ? 'user' : 'model'
+        role: m.direction === 'incoming' ? 'user' : 'model',
+        media_url: m.media_url,
+        media_type: m.media_type
       }));
 
-      // 2. Get fleet data
+      // 2. Get fleet data and Knowledge Base
       const fleetData = await fleetService.getFleetForAI();
+      const kbResult = await query("SELECT * FROM knowledge_base WHERE is_active = true");
+      const kbData = kbResult.rows;
 
       // 3. Generate revive message
       const revivePrompt = `
@@ -532,7 +554,8 @@ async function startServer() {
 
       const aiResponse = await chatWithAI(
         [...history as any, { role: 'user', text: revivePrompt }], 
-        fleetData
+        fleetData,
+        kbData
       );
 
       if (aiResponse && aiResponse.text) {
@@ -592,6 +615,101 @@ async function startServer() {
       const q = `UPDATE contacts SET ${updateFields.join(", ")} WHERE chat_id = $${i} RETURNING *`;
       const result = await query(q, values);
       res.json(result.rows[0]);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Learning Suggestions API
+  app.get("/api/learning-suggestions", async (req, res) => {
+    try {
+      const result = await query("SELECT * FROM learning_suggestions WHERE status = 'pending' ORDER BY created_at DESC");
+      res.json(result.rows);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.post("/api/learning-suggestions/:id/approve", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const suggestion = await query("SELECT * FROM learning_suggestions WHERE id = $1", [id]);
+      if (suggestion.rows.length === 0) return res.status(404).json({ error: "Suggestion not found" });
+
+      const s = suggestion.rows[0];
+      // 1. Add to knowledge_base
+      await query(
+        "INSERT INTO knowledge_base (question, answer, category, keywords) VALUES ($1, $2, $3, $4)",
+        [s.question, s.answer, s.category, s.keywords]
+      );
+      // 2. Mark as approved
+      await query("UPDATE learning_suggestions SET status = 'approved' WHERE id = $1", [id]);
+      
+      res.json({ success: true });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.post("/api/learning-suggestions/:id/reject", async (req, res) => {
+    try {
+      const { id } = req.params;
+      await query("UPDATE learning_suggestions SET status = 'rejected' WHERE id = $1", [id]);
+      res.json({ success: true });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Knowledge Base API
+  app.get("/api/knowledge-base", async (req, res) => {
+    try {
+      const result = await query("SELECT * FROM knowledge_base ORDER BY created_at DESC");
+      res.json(result.rows);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.post("/api/knowledge-base", async (req, res) => {
+    try {
+      const { question, answer, category, keywords } = req.body;
+      const result = await query(
+        "INSERT INTO knowledge_base (question, answer, category, keywords) VALUES ($1, $2, $3, $4) RETURNING *",
+        [question, answer, category, keywords]
+      );
+      res.json(result.rows[0]);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.patch("/api/knowledge-base/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { question, answer, category, keywords, is_active } = req.body;
+      const result = await query(
+        "UPDATE knowledge_base SET question = $1, answer = $2, category = $3, keywords = $4, is_active = $5 WHERE id = $6 RETURNING *",
+        [question, answer, category, keywords, is_active, id]
+      );
+      res.json(result.rows[0]);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/knowledge-base/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      await query("DELETE FROM knowledge_base WHERE id = $1", [id]);
+      res.json({ success: true });
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: "Internal server error" });

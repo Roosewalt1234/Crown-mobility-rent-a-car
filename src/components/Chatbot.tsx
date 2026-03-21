@@ -9,6 +9,7 @@ import ReactMarkdown from 'react-markdown';
 export const Chatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [fleetData, setFleetData] = useState<any[]>([]);
+  const [kbData, setKbData] = useState<any[]>([]);
   const [messages, setMessages] = useState<Message[]>([
     { role: 'model', text: "Hi! This is Sophie from Crescent Mobility Rent A Car in Dubai. 🚗 Please let us know which car you are looking for and for how many days. All car details are in our WhatsApp catalog — you can also select from there. 😊" }
   ]);
@@ -50,6 +51,13 @@ export const Chatbot = () => {
         // Fetch fleet data for AI context
         const fleet = await fleetService.getFleetForAI();
         setFleetData(fleet);
+
+        // Fetch Knowledge Base data
+        const kbRes = await fetch('/api/knowledge-base');
+        if (kbRes.ok) {
+          const kb = await kbRes.json();
+          setKbData(kb.filter((e: any) => e.is_active));
+        }
       } catch (err) {
         console.error('Error fetching data:', err);
       }
@@ -199,7 +207,7 @@ export const Chatbot = () => {
       return;
     }
 
-    const aiResponse = await chatWithAI(newMessages, fleetData, language);
+    const aiResponse = await chatWithAI(newMessages, fleetData, kbData, language);
     const modelMessage: Message = { role: 'model', text: aiResponse.text };
     setMessages(prev => [...prev, modelMessage]);
     setIsLoading(false);

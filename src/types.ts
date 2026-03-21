@@ -35,4 +35,6 @@ export interface Category {
 export interface Message {
   role: 'user' | 'model';
   text: string;
+  media_url?: string;
+  media_type?: string;
 }

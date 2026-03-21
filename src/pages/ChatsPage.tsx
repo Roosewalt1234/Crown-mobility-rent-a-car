@@ -221,24 +221,24 @@ export const ChatsPage: React.FC = () => {
                 />
               </div>
 
-              <div className="flex p-1 bg-slate-100 rounded-xl">
+              <div className="flex p-1 bg-slate-100 rounded-xl border border-slate-200 shadow-inner">
                 <button 
                   onClick={() => setFilter('all')}
-                  className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${filter === 'all' ? 'bg-white text-[#2e7d32] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${filter === 'all' ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-700'}`}
                 >
                   All
                 </button>
                 <button 
                   onClick={() => setFilter('ai')}
-                  className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${filter === 'ai' ? 'bg-white text-[#2e7d32] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${filter === 'ai' ? 'bg-white text-[#2e7d32] shadow-sm ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-700'}`}
                 >
                   AI Mode
                 </button>
                 <button 
                   onClick={() => setFilter('human')}
-                  className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${filter === 'human' ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${filter === 'human' ? 'bg-white text-orange-600 shadow-sm ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-700'}`}
                 >
-                  Human
+                  Manual
                 </button>
               </div>
             </div>
@@ -269,7 +269,9 @@ export const ChatsPage: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <h4 className="font-bold text-slate-900 truncate">{contact.contact_name}</h4>
                           {contact.human_takeover && (
-                            <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse shadow-[0_0_8px_rgba(249,115,22,0.5)]" />
+                            <span className="px-1.5 py-0.5 rounded-md bg-orange-50 text-orange-600 text-[8px] font-black uppercase tracking-tighter border border-orange-100">
+                              Manual
+                            </span>
                           )}
                         </div>
                         <span className="text-[10px] text-slate-400 font-medium">
@@ -324,28 +326,39 @@ export const ChatsPage: React.FC = () => {
                 </div>
               </div>
               <div className="flex items-center gap-2 md:gap-4">
-                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-full border border-slate-100">
-                  <span className={`text-[10px] font-bold uppercase tracking-wider transition-colors ${!selectedContact.human_takeover ? 'text-[#2e7d32]' : 'text-slate-400'}`}>AI Bot</span>
+                <div className="hidden sm:flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 shadow-inner">
                   <button 
-                    onClick={() => toggleHumanTakeover(selectedContact.chat_id, selectedContact.human_takeover)}
-                    className="relative w-12 h-6 rounded-full bg-slate-200 p-1 transition-colors duration-300"
+                    onClick={() => !selectedContact.human_takeover ? null : toggleHumanTakeover(selectedContact.chat_id, true)}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-300 ${
+                      !selectedContact.human_takeover 
+                        ? 'bg-white text-[#2e7d32] shadow-sm ring-1 ring-slate-200' 
+                        : 'text-slate-500 hover:text-slate-700'
+                    }`}
                   >
-                    <div className={`w-4 h-4 rounded-full shadow-sm transform transition-transform duration-300 ${
-                      selectedContact.human_takeover 
-                        ? 'translate-x-6 bg-orange-500' 
-                        : 'translate-x-0 bg-[#2e7d32]'
-                    }`} />
+                    <Bot size={14} className={!selectedContact.human_takeover ? 'animate-pulse' : ''} />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">AI Mode</span>
                   </button>
-                  <span className={`text-[10px] font-bold uppercase tracking-wider transition-colors ${selectedContact.human_takeover ? 'text-orange-600' : 'text-slate-400'}`}>Manual</span>
+                  <button 
+                    onClick={() => selectedContact.human_takeover ? null : toggleHumanTakeover(selectedContact.chat_id, false)}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-300 ${
+                      selectedContact.human_takeover 
+                        ? 'bg-white text-orange-600 shadow-sm ring-1 ring-slate-200' 
+                        : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    <User size={14} />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Manual</span>
+                  </button>
                 </div>
+                
                 <button 
                   onClick={handleRevive}
                   disabled={isReviving}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-full border border-indigo-100 hover:bg-indigo-100 transition-all disabled:opacity-50"
+                  className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-full border border-indigo-100 hover:bg-indigo-100 transition-all disabled:opacity-50 shadow-sm"
                   title="AI Revive: Send a personalized nudge to this customer"
                 >
                   <Sparkles size={14} className={isReviving ? 'animate-spin' : ''} />
-                  <span className="text-[10px] font-bold uppercase tracking-wider">{isReviving ? 'Reviving...' : 'Revive'}</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider">{isReviving ? 'Revive' : 'Revive'}</span>
                 </button>
                 <button className="p-2 text-slate-400 hover:text-[#2e7d32] transition-colors">
                   <Phone size={20} />
@@ -360,7 +373,15 @@ export const ChatsPage: React.FC = () => {
             </header>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/30">
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/30 relative">
+              {selectedContact.human_takeover && (
+                <div className="sticky top-0 z-20 flex justify-center mb-4">
+                  <div className="bg-orange-50 border border-orange-100 text-orange-700 px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-sm flex items-center gap-2 backdrop-blur-md bg-white/60">
+                    <User size={12} />
+                    Manual Mode Active: AI is Paused
+                  </div>
+                </div>
+              )}
               {messages.map((msg, i) => {
                 const isOutgoing = msg.direction === 'outgoing';
                 return (
@@ -376,10 +397,15 @@ export const ChatsPage: React.FC = () => {
                           ? 'bg-[#2e7d32] text-white rounded-tr-none' 
                           : 'bg-white text-slate-900 border border-slate-100 rounded-tl-none'
                       }`}>
-                        {msg.is_ai_reply && (
+                        {msg.is_ai_reply ? (
                           <div className="flex items-center gap-1.5 mb-2 text-[10px] font-bold uppercase tracking-widest opacity-70">
                             <Bot size={12} />
                             AI Assistant
+                          </div>
+                        ) : isOutgoing && (
+                          <div className="flex items-center gap-1.5 mb-2 text-[10px] font-bold uppercase tracking-widest opacity-70">
+                            <User size={12} />
+                            Manual Reply
                           </div>
                         )}
                         <p className="text-sm leading-relaxed">{msg.body}</p>

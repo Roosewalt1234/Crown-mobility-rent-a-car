@@ -47,12 +47,17 @@ const notifyManagerTool = {
   },
 };
 
-export async function chatWithAI(messages: Message[], fleetData?: any[], language: string = 'English') {
+export async function chatWithAI(messages: Message[], fleetData?: any[], kbData?: any[], language: string = 'English') {
   try {
     let dynamicInstruction = SYSTEM_INSTRUCTION;
     
     // Add language instruction
     dynamicInstruction += `\n\nCRITICAL: YOU MUST RESPOND ONLY IN ${language.toUpperCase()}. Even if the user speaks another language, your reply must be in ${language}.`;
+
+    let knowledgeBankContent = KNOWLEDGE_BANK;
+    if (kbData && kbData.length > 0) {
+      knowledgeBankContent = kbData.map(e => `Q: ${e.question}\nA: ${e.answer}\nKeywords: ${e.keywords?.join(', ')}`).join('\n\n');
+    }
 
     if (fleetData && fleetData.length > 0) {
       const fleetString = fleetData.map(car => 
@@ -65,16 +70,24 @@ export async function chatWithAI(messages: Message[], fleetData?: any[], languag
       
       dynamicInstruction = dynamicInstruction.replace(
         '${KNOWLEDGE_BANK}',
-        `REAL-TIME FLEET DATA (USE THIS AS SINGLE SOURCE OF TRUTH):\n${fleetString}\n\n${KNOWLEDGE_BANK}`
+        `REAL-TIME FLEET DATA (USE THIS AS SINGLE SOURCE OF TRUTH):\n${fleetString}\n\n${knowledgeBankContent}`
       );
+    } else {
+      dynamicInstruction = dynamicInstruction.replace('${KNOWLEDGE_BANK}', knowledgeBankContent);
     }
 
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: messages.map(m => ({
-        role: m.role === 'user' ? 'user' : 'model',
-        parts: [{ text: m.text }]
-      })),
+      contents: messages.map(m => {
+        let text = m.text;
+        if (m.media_url) {
+          text = `[USER SENT A ${m.media_type?.toUpperCase() || 'MEDIA'} DOCUMENT] ${text || ''}`;
+        }
+        return {
+          role: m.role === 'user' ? 'user' : 'model',
+          parts: [{ text }]
+        };
+      }),
       config: {
         systemInstruction: { parts: [{ text: dynamicInstruction }] },
         temperature: 0.7,

@@ -39,13 +39,22 @@ export const initDb = async () => {
       CREATE TABLE IF NOT EXISTS messages (
         id SERIAL PRIMARY KEY,
         chat_id TEXT NOT NULL REFERENCES contacts(chat_id) ON DELETE CASCADE,
-        body TEXT NOT NULL,
+        body TEXT,
         direction TEXT NOT NULL,
         is_ai_reply BOOLEAN DEFAULT FALSE,
+        media_url TEXT,
+        media_type TEXT,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         status TEXT DEFAULT 'sent'
       );
     `);
+
+    // Migration: Add media columns if they don't exist
+    await query(`
+      ALTER TABLE messages ADD COLUMN IF NOT EXISTS media_url TEXT;
+      ALTER TABLE messages ADD COLUMN IF NOT EXISTS media_type TEXT;
+      ALTER TABLE messages ALTER COLUMN body DROP NOT NULL;
+    `).catch(() => {});
 
     await query(`
       CREATE TABLE IF NOT EXISTS settings (
@@ -84,6 +93,32 @@ export const initDb = async () => {
         extra_km_charge NUMERIC,
         car_features TEXT,
         deposit_amount NUMERIC,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS learning_suggestions (
+        id SERIAL PRIMARY KEY,
+        chat_id TEXT NOT NULL REFERENCES contacts(chat_id) ON DELETE CASCADE,
+        question TEXT NOT NULL,
+        answer TEXT NOT NULL,
+        category TEXT DEFAULT 'Uncategorized',
+        keywords TEXT[],
+        confidence FLOAT DEFAULT 0.0,
+        status TEXT DEFAULT 'pending',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    
+    await query(`
+      CREATE TABLE IF NOT EXISTS knowledge_base (
+        id SERIAL PRIMARY KEY,
+        question TEXT NOT NULL,
+        answer TEXT NOT NULL,
+        category TEXT DEFAULT 'Uncategorized',
+        keywords TEXT[],
+        is_active BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
