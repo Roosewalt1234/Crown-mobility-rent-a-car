@@ -535,152 +535,147 @@ async function startServer() {
             // 1. Check if human takeover is active
             const contactResult = await query("SELECT human_takeover, last_message_at FROM contacts WHERE chat_id = $1", [chat_id]);
             const contact = contactResult.rows[0];
-            let isHumanTakeover = contact?.human_takeover || false;
-
-            // AUTO-RESET Takeover after 48 hours of inactivity
-            if (isHumanTakeover && contact?.last_message_at) {
-              const lastMsgTime = new Date(contact.last_message_at).getTime();
-              const fortyEightHours = 48 * 60 * 60 * 1000;
-              if (Date.now() - lastMsgTime > fortyEightHours) {
-                console.log(`[AI-DEBUG] Human takeover expired (48h). Resetting to false.`);
-                await query("UPDATE contacts SET human_takeover = false WHERE chat_id = $1", [chat_id]);
-                isHumanTakeover = false;
-              }
+            
+            // CRITICAL: Ensure we treat human_takeover as a boolean
+            let isHumanTakeover = false;
+            if (contact) {
+              isHumanTakeover = contact.human_takeover === true || String(contact.human_takeover) === 'true';
             }
 
-            if (!isHumanTakeover) {
-              console.log(`[AI-DEBUG] Human takeover is OFF. Proceeding.`);
-              
-              // 2. Get context (last 10 messages)
-              const historyResult = await query(
-                "SELECT body, direction, is_ai_reply, media_url, media_type FROM messages WHERE chat_id = $1 ORDER BY created_at DESC LIMIT 10",
-                [chat_id]
-              );
-              
-              const history = historyResult.rows.reverse().map(m => ({
-                text: m.body,
-                role: m.direction === 'incoming' ? 'user' : 'model',
-                media_url: m.media_url,
-                media_type: m.media_type
-              }));
-              console.log(`[AI-DEBUG] Context retrieved: ${history.length} messages.`);
+            console.log(`[AI-DEBUG] Chat ID: ${chat_id}, isHumanTakeover: ${isHumanTakeover}`);
 
-              // 3. Get fleet data directly from Railway DB
-              const fleetResult = await query("SELECT * FROM fleet_stock ORDER BY created_at DESC");
-              const fleetData = fleetResult.rows;
-              console.log(`[AI-DEBUG] Fleet data retrieved from Railway: ${fleetData?.length || 0} cars.`);
+            if (isHumanTakeover) {
+              console.log(`[AI-DEBUG] Human takeover is ON for ${chat_id}. Skipping AI background process entirely.`);
+              return;
+            }
 
-              // 4. Get Knowledge Base data
-              const kbResult = await query("SELECT * FROM knowledge_base WHERE is_active = true");
-              const kbData = kbResult.rows;
+            // 2. Get context (last 10 messages)
+            const historyResult = await query(
+              "SELECT body, direction, is_ai_reply, media_url, media_type FROM messages WHERE chat_id = $1 ORDER BY created_at DESC LIMIT 10",
+              [chat_id]
+            );
+            
+            const history = historyResult.rows.reverse().map(m => ({
+              text: m.body,
+              role: m.direction === 'incoming' ? 'user' : 'model',
+              media_url: m.media_url,
+              media_type: m.media_type
+            }));
+            console.log(`[AI-DEBUG] Context retrieved: ${history.length} messages.`);
 
-              // 5. Generate AI response
-              console.log(`[AI-DEBUG] Calling Gemini AI...`);
-              const aiResponse = await chatWithAI(history as any, fleetData, kbData);
+            // 3. Get fleet data directly from Railway DB
+            const fleetResult = await query("SELECT * FROM fleet_stock ORDER BY created_at DESC");
+            const fleetData = fleetResult.rows;
+            console.log(`[AI-DEBUG] Fleet data retrieved from Railway: ${fleetData?.length || 0} cars.`);
 
-              // If AI failed (returned fallback message), don't send it automatically
-              if (aiResponse && aiResponse.text && aiResponse.text.includes("trouble connecting")) {
-                console.warn(`[AI-DEBUG] Skipping auto-reply for ${chat_id} due to AI connection error.`);
-                return;
+            // 4. Get Knowledge Base data
+            const kbResult = await query("SELECT * FROM knowledge_base WHERE is_active = true");
+            const kbData = kbResult.rows;
+
+            // 5. Generate AI response
+            console.log(`[AI-DEBUG] Calling Gemini AI...`);
+            const aiResponse = await chatWithAI(history as any, fleetData, kbData);
+
+            // If AI failed (returned fallback message), don't send it automatically
+            if (aiResponse && aiResponse.text && aiResponse.text.includes("trouble connecting")) {
+              console.warn(`[AI-DEBUG] Skipping auto-reply for ${chat_id} due to AI connection error.`);
+              return;
+            }
+
+            if (aiResponse && aiResponse.text) {
+              console.log(`[AI-DEBUG] AI generated text: ${aiResponse.text.substring(0, 30)}...`);
+
+              // If AI escalated, set human_takeover to true
+              if (aiResponse.escalated) {
+                console.log(`[AI-DEBUG] AI requested escalation. Setting human_takeover = true for ${chat_id}`);
+                await query("UPDATE contacts SET human_takeover = true WHERE chat_id = $1", [chat_id]);
+
+                // Notify Manager (Only once)
+                const contactResult = await query("SELECT contact_name, contact_phone, manager_notified_at, human_takeover FROM contacts WHERE chat_id = $1", [chat_id]);
+                const contact = contactResult.rows[0];
+
+                // Only notify if not already in manual mode (before we just set it)
+                // and manager hasn't been notified yet
+                if (contact && !contact.manager_notified_at && !isHumanTakeover) {
+                  const generalConfigResult = await query("SELECT value FROM settings WHERE key = 'general_config'");
+                  const generalConfig = generalConfigResult.rows[0]?.value;
+                  const managerId = generalConfig?.escalationId || "971507172790@c.us";
+
+                  if (managerId) {
+                    const notificationMsg = `🚨 This client Need your Attention\n\nContact name: ${contact.contact_name}\nContact number: ${contact.contact_phone}\nReason: ${aiResponse.escalationArgs?.reason || 'AI Escalation'}`;
+                    
+                    console.log(`[AI-DEBUG] Notifying manager ${managerId} about ${chat_id}`);
+                    await wahaService.sendMessage(managerId, notificationMsg);
+                    
+                    // Update manager_notified_at
+                    await query("UPDATE contacts SET manager_notified_at = CURRENT_TIMESTAMP WHERE chat_id = $1", [chat_id]);
+                  }
+                }
               }
 
-              if (aiResponse && aiResponse.text) {
-                console.log(`[AI-DEBUG] AI generated text: ${aiResponse.text.substring(0, 30)}...`);
+              // 5. Save AI response to DB
+              await query(
+                "INSERT INTO messages (chat_id, body, direction, is_ai_reply) VALUES ($1, $2, $3, $4)",
+                [chat_id, aiResponse.text, 'outgoing', true]
+              );
+              console.log(`[AI-DEBUG] AI response saved to database.`);
 
-                // If AI escalated, set human_takeover to true
-                if (aiResponse.escalated) {
-                  console.log(`[AI-DEBUG] AI requested escalation. Setting human_takeover = true for ${chat_id}`);
-                  await query("UPDATE contacts SET human_takeover = true WHERE chat_id = $1", [chat_id]);
+              // 6. Update contact preview
+              await query(
+                "UPDATE contacts SET last_message_preview = $1, last_message_at = CURRENT_TIMESTAMP WHERE chat_id = $2",
+                [aiResponse.text, chat_id]
+              );
 
-                  // Notify Manager (Only once)
-                  const contactResult = await query("SELECT contact_name, contact_phone, manager_notified_at, human_takeover FROM contacts WHERE chat_id = $1", [chat_id]);
-                  const contact = contactResult.rows[0];
+              // 7. Send via WAHA
+              console.log(`[AI-DEBUG] Attempting to send via WAHA to ${chat_id}...`);
+              await wahaService.sendMessage(chat_id, aiResponse.text);
 
-                  // Only notify if not already in manual mode (before we just set it)
-                  // and manager hasn't been notified yet
-                  if (contact && !contact.manager_notified_at && !isHumanTakeover) {
-                    const generalConfigResult = await query("SELECT value FROM settings WHERE key = 'general_config'");
-                    const generalConfig = generalConfigResult.rows[0]?.value;
-                    const managerId = generalConfig?.escalationId || "971507172790@c.us";
-
-                    if (managerId) {
-                      const notificationMsg = `🚨 This client Need your Attention\n\nContact name: ${contact.contact_name}\nContact number: ${contact.contact_phone}\nReason: ${aiResponse.escalationArgs?.reason || 'AI Escalation'}`;
-                      
-                      console.log(`[AI-DEBUG] Notifying manager ${managerId} about ${chat_id}`);
-                      await wahaService.sendMessage(managerId, notificationMsg);
-                      
-                      // Update manager_notified_at
-                      await query("UPDATE contacts SET manager_notified_at = CURRENT_TIMESTAMP WHERE chat_id = $1", [chat_id]);
-                    }
-                  }
-                }
-
-                // 5. Save AI response to DB
-                await query(
-                  "INSERT INTO messages (chat_id, body, direction, is_ai_reply) VALUES ($1, $2, $3, $4)",
-                  [chat_id, aiResponse.text, 'outgoing', true]
+              // 8. If AI requested to send images
+              const anyAiResponse = aiResponse as any;
+              if (anyAiResponse.sendImages && anyAiResponse.imageArgs?.vehicle_id) {
+                const vehicleId = anyAiResponse.imageArgs.vehicle_id;
+                console.log(`[AI-DEBUG] AI requested to send images for vehicle: ${vehicleId}`);
+                
+                // Fetch images from DB
+                const vehicleResult = await query(
+                  "SELECT vehicle_image_url, vehicle_images FROM fleet_stock WHERE vehicle_id = $1",
+                  [vehicleId]
                 );
-                console.log(`[AI-DEBUG] AI response saved to database.`);
-
-                // 6. Update contact preview
-                await query(
-                  "UPDATE contacts SET last_message_preview = $1, last_message_at = CURRENT_TIMESTAMP WHERE chat_id = $2",
-                  [aiResponse.text, chat_id]
-                );
-
-                // 7. Send via WAHA
-                console.log(`[AI-DEBUG] Attempting to send via WAHA to ${chat_id}...`);
-                await wahaService.sendMessage(chat_id, aiResponse.text);
-
-                // 8. If AI requested to send images
-                const anyAiResponse = aiResponse as any;
-                if (anyAiResponse.sendImages && anyAiResponse.imageArgs?.vehicle_id) {
-                  const vehicleId = anyAiResponse.imageArgs.vehicle_id;
-                  console.log(`[AI-DEBUG] AI requested to send images for vehicle: \${vehicleId}`);
+                
+                if (vehicleResult.rows.length > 0) {
+                  const vehicle = vehicleResult.rows[0];
+                  const images = typeof vehicle.vehicle_images === 'string' 
+                    ? JSON.parse(vehicle.vehicle_images) 
+                    : (vehicle.vehicle_images || []);
                   
-                  // Fetch images from DB
-                  const vehicleResult = await query(
-                    "SELECT vehicle_image_url, vehicle_images FROM fleet_stock WHERE vehicle_id = $1",
-                    [vehicleId]
-                  );
+                  const allImages = Array.from(new Set([vehicle.vehicle_image_url, ...images].filter(Boolean)));
                   
-                  if (vehicleResult.rows.length > 0) {
-                    const vehicle = vehicleResult.rows[0];
-                    const images = typeof vehicle.vehicle_images === 'string' 
-                      ? JSON.parse(vehicle.vehicle_images) 
-                      : (vehicle.vehicle_images || []);
-                    
-                    const allImages = Array.from(new Set([vehicle.vehicle_image_url, ...images].filter(Boolean)));
-                    
-                    console.log(`[AI-DEBUG] Found ${allImages.length} unique images for vehicle ${vehicleId}.`);
-                    
-                    for (const url of allImages) {
-                      console.log(`[AI-DEBUG] Sending image to WAHA: ${url}`);
-                      try {
-                        await wahaService.sendImage(chat_id, url);
-                        console.log(`[AI-DEBUG] Image sent successfully to WAHA.`);
-                      } catch (wahaErr) {
-                        console.error(`[AI-DEBUG] Failed to send image to WAHA:`, wahaErr);
-                      }
-                      
-                      // Save image message to DB
-                      await query(
-                        "INSERT INTO messages (chat_id, body, direction, is_ai_reply, media_url, media_type) VALUES ($1, $2, $3, $4, $5, $6)",
-                        [chat_id, "Image sent", 'outgoing', true, url, 'image/jpeg']
-                      );
-
-                      // Small delay between images
-                      await new Promise(resolve => setTimeout(resolve, 1000));
+                  console.log(`[AI-DEBUG] Found ${allImages.length} unique images for vehicle ${vehicleId}.`);
+                  
+                  for (const url of allImages) {
+                    console.log(`[AI-DEBUG] Sending image to WAHA: ${url}`);
+                    try {
+                      await wahaService.sendImage(chat_id, url);
+                      console.log(`[AI-DEBUG] Image sent successfully to WAHA.`);
+                    } catch (wahaErr) {
+                      console.error(`[AI-DEBUG] Failed to send image to WAHA:`, wahaErr);
                     }
-                  } else {
-                    console.warn(`[AI-DEBUG] Vehicle \${vehicleId} not found in database.`);
+                    
+                    // Save image message to DB
+                    await query(
+                      "INSERT INTO messages (chat_id, body, direction, is_ai_reply, media_url, media_type) VALUES ($1, $2, $3, $4, $5, $6)",
+                      [chat_id, "Image sent", 'outgoing', true, url, 'image/jpeg']
+                    );
+
+                    // Small delay between images
+                    await new Promise(resolve => setTimeout(resolve, 1000));
                   }
+                } else {
+                  console.warn(`[AI-DEBUG] Vehicle ${vehicleId} not found in database.`);
                 }
-              } else {
-                console.warn(`[AI-DEBUG] AI failed to generate a response text.`);
               }
             } else {
-              console.log(`[AI-DEBUG] Human takeover is ON. Skipping AI.`);
+              console.warn(`[AI-DEBUG] AI failed to generate a response text.`);
             }
           } catch (aiErr) {
             console.error("[AI-DEBUG] CRITICAL ERROR in background process:", aiErr);

@@ -70,7 +70,12 @@ export const heartbeatService = {
       // 0. Check if human takeover is active
       const initialContactResult = await query("SELECT human_takeover FROM contacts WHERE chat_id = $1", [chatId]);
       const initialContact = initialContactResult.rows[0];
-      const wasHumanTakeover = initialContact?.human_takeover || false;
+      
+      // CRITICAL: Ensure we treat human_takeover as a boolean
+      let wasHumanTakeover = false;
+      if (initialContact) {
+        wasHumanTakeover = initialContact.human_takeover === true || String(initialContact.human_takeover) === 'true';
+      }
 
       if (wasHumanTakeover) {
         console.log(`[HEARTBEAT] Contact ${chatId} is in manual mode. Skipping revival.`);
