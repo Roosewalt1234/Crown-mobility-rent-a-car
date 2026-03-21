@@ -107,7 +107,7 @@ export async function chatWithAI(messages: Message[], fleetData?: any[], kbData?
       if (call.name === "notify_manager") {
         console.log("Escalating to manager:", call.args);
         return {
-          text: "I will check with manager and get back to you within 5 mnts. 😊",
+          text: "I will check with manager and get back to you 😊",
           escalated: true,
           escalationArgs: call.args
         };
