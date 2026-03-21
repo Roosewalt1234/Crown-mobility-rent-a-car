@@ -38,6 +38,65 @@ async function startServer() {
   // Initialize Database
   initDb().then(async () => {
     console.log("Database init process finished");
+    
+    // Seed Knowledge Base if empty
+    try {
+      const kbCheck = await query("SELECT COUNT(*) FROM knowledge_base");
+      if (parseInt(kbCheck.rows[0].count) === 0) {
+        console.log("[SEED] Knowledge base is empty. Seeding from aiConfig...");
+        const { KNOWLEDGE_BANK } = await import("./src/constants/aiConfig.ts");
+        
+        // Split by section headers (all caps lines followed by Q:)
+        const entries = KNOWLEDGE_BANK.split(/\n(?=[A-Z\s]+\nQ:)/);
+        
+        let count = 0;
+        for (const entry of entries) {
+          const lines = entry.trim().split('\n');
+          if (lines.length < 3) continue;
+
+          let question = '';
+          let answer = '';
+          let keywords: string[] = [];
+          let category = 'General';
+
+          // Find Q:, A:, and Triggers:
+          const qIdx = lines.findIndex(l => l.startsWith('Q:'));
+          const aIdx = lines.findIndex(l => l.startsWith('A:'));
+          const tIdx = lines.findIndex(l => l.startsWith('Triggers:'));
+
+          if (qIdx !== -1 && aIdx !== -1) {
+            question = lines[qIdx].replace('Q:', '').trim();
+            answer = lines[aIdx].replace('A:', '').trim();
+            
+            if (tIdx !== -1) {
+              keywords = lines[tIdx].replace('Triggers:', '').split(',').map(k => k.trim()).filter(k => k);
+            }
+
+            // Determine category from the line BEFORE Q:
+            if (qIdx > 0) {
+              const header = lines[qIdx - 1].trim();
+              if (header.includes('ADVANCE') || header.includes('DEPOSIT') || header.includes('PRICING')) category = 'Pricing';
+              else if (header.includes('CANCELLATION')) category = 'Policy';
+              else if (header.includes('REQUIREMENTS')) category = 'Requirements';
+              else if (header.includes('LOCATION')) category = 'General';
+              else if (header.includes('FLEET') || header.includes('AVAILABILITY')) category = 'Fleet';
+              else if (header.includes('SALIK') || header.includes('FINES')) category = 'Policy';
+              else if (header.includes('EXTENSION')) category = 'Support';
+            }
+
+            await query(
+              "INSERT INTO knowledge_base (question, answer, category, keywords) VALUES ($1, $2, $3, $4)",
+              [question, answer, category, keywords]
+            );
+            count++;
+          }
+        }
+        console.log(`[SEED] Knowledge base seeded successfully with ${count} entries`);
+      }
+    } catch (err) {
+      console.error("[SEED] Failed to seed knowledge base:", err);
+    }
+
     // Cleanup: Deactivate any bank-related knowledge base entries
     try {
       await query("UPDATE knowledge_base SET is_active = false WHERE question ILIKE '%bank%' OR question ILIKE '%account%' OR answer ILIKE '%bank%' OR answer ILIKE '%account%'");
@@ -534,10 +593,12 @@ async function startServer() {
                   await query("UPDATE contacts SET human_takeover = true WHERE chat_id = $1", [chat_id]);
 
                   // Notify Manager (Only once)
-                  const contactResult = await query("SELECT contact_name, contact_phone, manager_notified_at FROM contacts WHERE chat_id = $1", [chat_id]);
+                  const contactResult = await query("SELECT contact_name, contact_phone, manager_notified_at, human_takeover FROM contacts WHERE chat_id = $1", [chat_id]);
                   const contact = contactResult.rows[0];
 
-                  if (contact && !contact.manager_notified_at) {
+                  // Only notify if not already in manual mode (before we just set it)
+                  // and manager hasn't been notified yet
+                  if (contact && !contact.manager_notified_at && !isHumanTakeover) {
                     const generalConfigResult = await query("SELECT value FROM settings WHERE key = 'general_config'");
                     const generalConfig = generalConfigResult.rows[0]?.value;
                     const managerId = generalConfig?.escalationId || "971507172790@c.us";

@@ -67,6 +67,16 @@ export const heartbeatService = {
     try {
       console.log(`[HEARTBEAT] Reviving conversation for ${chatId}`);
 
+      // 0. Check if human takeover is active
+      const initialContactResult = await query("SELECT human_takeover FROM contacts WHERE chat_id = $1", [chatId]);
+      const initialContact = initialContactResult.rows[0];
+      const wasHumanTakeover = initialContact?.human_takeover || false;
+
+      if (wasHumanTakeover) {
+        console.log(`[HEARTBEAT] Contact ${chatId} is in manual mode. Skipping revival.`);
+        return;
+      }
+
       // 1. Get history for context
       const historyResult = await query(
         "SELECT body, direction, is_ai_reply, media_url, media_type FROM messages WHERE chat_id = $1 ORDER BY created_at DESC LIMIT 5",
@@ -118,10 +128,12 @@ export const heartbeatService = {
           await query("UPDATE contacts SET human_takeover = true WHERE chat_id = $1", [chatId]);
 
           // Notify Manager (Only once)
-          const contactResult = await query("SELECT contact_name, contact_phone, manager_notified_at FROM contacts WHERE chat_id = $1", [chatId]);
+          const contactResult = await query("SELECT contact_name, contact_phone, manager_notified_at, human_takeover FROM contacts WHERE chat_id = $1", [chatId]);
           const contact = contactResult.rows[0];
 
-          if (contact && !contact.manager_notified_at) {
+          // Only notify if not already in manual mode (before we just set it)
+          // and manager hasn't been notified yet
+          if (contact && !contact.manager_notified_at && !wasHumanTakeover) {
             const generalConfigResult = await query("SELECT value FROM settings WHERE key = 'general_config'");
             const generalConfig = generalConfigResult.rows[0]?.value;
             const managerId = generalConfig?.escalationId || "971507172790@c.us";
