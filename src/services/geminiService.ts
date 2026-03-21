@@ -47,6 +47,26 @@ const notifyManagerTool = {
   },
 };
 
+const sendCarImagesTool = {
+  name: "send_car_images",
+  parameters: {
+    type: Type.OBJECT,
+    description: "Send multiple images of a specific car to the customer.",
+    properties: {
+      vehicle_id: {
+        type: Type.STRING,
+        description: "The unique ID of the vehicle.",
+      },
+      image_urls: {
+        type: Type.ARRAY,
+        items: { type: Type.STRING },
+        description: "The list of image URLs to send.",
+      },
+    },
+    required: ["vehicle_id", "image_urls"],
+  },
+};
+
 export async function chatWithAI(messages: Message[], fleetData?: any[], kbData?: any[], language: string = 'English') {
   try {
     let dynamicInstruction = SYSTEM_INSTRUCTION;
@@ -54,19 +74,29 @@ export async function chatWithAI(messages: Message[], fleetData?: any[], kbData?
     // Add language instruction
     dynamicInstruction += `\n\nCRITICAL: YOU MUST RESPOND ONLY IN ${language.toUpperCase()}. Even if the user speaks another language, your reply must be in ${language}.`;
 
+    // REPETITION PREVENTION: Check the last model message in history
+    const lastModelMessage = [...messages].reverse().find(m => m.role === 'model');
+    if (lastModelMessage && lastModelMessage.text) {
+      dynamicInstruction += `\n\nREPETITION PREVENTION: Your last response was: "${lastModelMessage.text}". DO NOT repeat this or say something too similar. Ensure your new response is fresh and moves the conversation forward.`;
+    }
+
     let knowledgeBankContent = KNOWLEDGE_BANK;
     if (kbData && kbData.length > 0) {
       knowledgeBankContent = kbData.map(e => `Q: ${e.question}\nA: ${e.answer}\nKeywords: ${e.keywords?.join(', ')}`).join('\n\n');
     }
 
     if (fleetData && fleetData.length > 0) {
-      const fleetString = fleetData.map(car => 
-        `- ${car.vehicle_make} ${car.vehicle_model} (${car.vehicle_year}): ` +
-        `Price: AED ${car.day_price}/day, AED ${car.week_price}/week, AED ${car.month_price}/month. ` +
+      const fleetString = fleetData.map(car => {
+        const images = Array.isArray(car.vehicle_images) ? car.vehicle_images : [];
+        const allImages = [car.vehicle_image_url, ...images].filter(Boolean);
+        
+        return `- ${car.vehicle_make} ${car.vehicle_model} (${car.vehicle_year}): ` +
+        `ID: ${car.vehicle_id}, Price: AED ${car.day_price}/day, AED ${car.week_price}/week, AED ${car.month_price}/month. ` +
         `Type: ${car.fleet_type}, Color: ${car.vehicle_color}, Mileage Limit: ${car.milage_limit}km, ` +
         `Extra KM: AED ${car.extra_km_charge}, Deposit: AED ${car.deposit_amount || car['deposit - amount'] || 3000}. ` +
-        `Features: ${car.car_features}. Description: ${car.car_description}`
-      ).join('\n');
+        `Features: ${car.car_features}. Description: ${car.car_description}. ` +
+        `Images Available: ${allImages.length} images. URLs: ${allImages.join(', ')}`;
+      }).join('\n');
       
       dynamicInstruction = dynamicInstruction.replace(
         '${KNOWLEDGE_BANK}',
@@ -92,7 +122,7 @@ export async function chatWithAI(messages: Message[], fleetData?: any[], kbData?
       config: {
         systemInstruction: { parts: [{ text: dynamicInstruction }] },
         temperature: 0.7,
-        tools: [{ functionDeclarations: [notifyManagerTool] }],
+        tools: [{ functionDeclarations: [notifyManagerTool, sendCarImagesTool] }],
       },
     });
 
@@ -111,6 +141,14 @@ export async function chatWithAI(messages: Message[], fleetData?: any[], kbData?
           text: "I will check with manager and get back to you 😊",
           escalated: true,
           escalationArgs: call.args
+        };
+      }
+      if (call.name === "send_car_images") {
+        console.log("AI requested to send images:", call.args);
+        return {
+          text: "Sure! I'm sending you the images of the car right now. 📸",
+          sendImages: true,
+          imageArgs: call.args
         };
       }
     }

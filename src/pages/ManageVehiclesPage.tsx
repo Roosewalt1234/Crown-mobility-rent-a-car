@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useDropzone } from 'react-dropzone';
+import { supabase } from '../lib/supabase';
 import { 
   Plus, 
   Search, 
@@ -12,7 +14,9 @@ import {
   Info,
   CheckCircle2,
   XCircle,
-  MoreVertical
+  MoreVertical,
+  Upload,
+  X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
@@ -24,6 +28,7 @@ interface Vehicle {
   vehicle_year: string;
   fleet_type: string;
   vehicle_image_url: string;
+  vehicle_images?: string[];
   car_description: string;
   day_price: number;
   week_price: number;
@@ -49,6 +54,7 @@ export const ManageVehiclesPage: React.FC = () => {
     vehicle_year: new Date().getFullYear().toString(),
     fleet_type: '',
     vehicle_image_url: '',
+    vehicle_images: [],
     car_description: '',
     day_price: 0,
     week_price: 0,
@@ -57,6 +63,63 @@ export const ManageVehiclesPage: React.FC = () => {
     extra_km_charge: 5,
     car_features: '',
     deposit_amount: 3000
+  });
+
+  const [uploading, setUploading] = useState(false);
+
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    if (acceptedFiles.length === 0) return;
+    
+    setUploading(true);
+    try {
+      const uploadPromises = acceptedFiles.map(async (file) => {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+        const filePath = `vehicles/${fileName}`;
+
+        const { error: uploadError, data } = await supabase.storage
+          .from('vehicles')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('vehicles')
+          .getPublicUrl(filePath);
+
+        return publicUrl;
+      });
+
+      const urls = await Promise.all(uploadPromises);
+      
+      // First one goes to main image if empty, others to additional
+      if (!formData.vehicle_image_url) {
+        const [main, ...rest] = urls;
+        setFormData(prev => ({
+          ...prev,
+          vehicle_image_url: main,
+          vehicle_images: [...(prev.vehicle_images || []), ...rest]
+        }));
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          vehicle_images: [...(prev.vehicle_images || []), ...urls]
+        }));
+      }
+      
+      toast.success(`Successfully uploaded ${urls.length} image(s)`);
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast.error('Failed to upload image: ' + (error.message || 'Unknown error. Make sure "vehicles" bucket exists in Supabase.'));
+    } finally {
+      setUploading(false);
+    }
+  }, [formData.vehicle_image_url]);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
+    onDrop,
+    accept: { 'image/*': [] },
+    multiple: true
   });
 
   const FLEET_TYPES = ['SUV', 'Luxury', 'Sports', 'Economy', 'Convertible', 'Sedan', 'Electric'];
@@ -86,7 +149,8 @@ export const ManageVehiclesPage: React.FC = () => {
       // Map data to handle potential 'deposit - amount' column name
       const mappedData = (data || []).map((v: any) => ({
         ...v,
-        deposit_amount: v.deposit_amount ?? v['deposit - amount'] ?? 3000
+        deposit_amount: v.deposit_amount ?? v['deposit - amount'] ?? 3000,
+        vehicle_images: typeof v.vehicle_images === 'string' ? JSON.parse(v.vehicle_images) : (v.vehicle_images || [])
       }));
       
       setVehicles(mappedData);
@@ -100,7 +164,10 @@ export const ManageVehiclesPage: React.FC = () => {
   const handleOpenModal = (vehicle?: Vehicle) => {
     if (vehicle) {
       setEditingVehicle(vehicle);
-      setFormData(vehicle);
+      setFormData({
+        ...vehicle,
+        vehicle_images: Array.isArray(vehicle.vehicle_images) ? vehicle.vehicle_images : []
+      });
     } else {
       setEditingVehicle(null);
       setFormData({
@@ -109,6 +176,7 @@ export const ManageVehiclesPage: React.FC = () => {
         vehicle_year: new Date().getFullYear().toString(),
         fleet_type: 'SUV',
         vehicle_image_url: '',
+        vehicle_images: [],
         car_description: '',
         day_price: 0,
         week_price: 0,
@@ -477,15 +545,94 @@ export const ManageVehiclesPage: React.FC = () => {
                     <ImageIcon size={18} />
                     <h3 className="font-bold uppercase tracking-widest text-xs">Media & Features</h3>
                   </div>
+
+                  {/* Drag & Drop Zone */}
+                  <div 
+                    {...getRootProps()} 
+                    className={`border-2 border-dashed rounded-[2rem] p-10 text-center transition-all cursor-pointer ${
+                      isDragActive ? 'border-[#2e7d32] bg-[#2e7d32]/5' : 'border-slate-200 hover:border-[#2e7d32]/30 bg-slate-50/50'
+                    }`}
+                  >
+                    <input {...getInputProps()} />
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="w-16 h-16 rounded-full bg-white shadow-sm flex items-center justify-center text-[#2e7d32]">
+                        {uploading ? <Loader2 className="animate-spin" size={32} /> : <Upload size={32} />}
+                      </div>
+                      <div>
+                        <p className="text-slate-900 font-bold">
+                          {uploading ? 'Uploading images...' : 'Drag & drop car images here'}
+                        </p>
+                        <p className="text-slate-500 text-sm mt-1">or click to select files (JPG, PNG, WEBP)</p>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Image URL</label>
-                      <input 
-                        value={formData.vehicle_image_url}
-                        onChange={e => setFormData({...formData, vehicle_image_url: e.target.value})}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2e7d32]/50"
-                        placeholder="https://..."
-                      />
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Main Image URL</label>
+                      <div className="flex gap-4 items-start">
+                        <div className="flex-1">
+                          <input 
+                            value={formData.vehicle_image_url}
+                            onChange={e => setFormData({...formData, vehicle_image_url: e.target.value})}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2e7d32]/50"
+                            placeholder="https://..."
+                          />
+                        </div>
+                        {formData.vehicle_image_url && (
+                          <div className="w-20 h-14 rounded-lg bg-slate-100 overflow-hidden border border-slate-200 shrink-0">
+                            <img src={formData.vehicle_image_url} alt="Main" className="w-full h-full object-cover" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Additional Images</label>
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            const current = formData.vehicle_images || [];
+                            setFormData({...formData, vehicle_images: [...current, '']});
+                          }}
+                          className="text-xs font-bold text-[#2e7d32] hover:underline"
+                        >
+                          + Add Image URL
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-1 gap-3">
+                        {(formData.vehicle_images || []).map((url, idx) => (
+                          <div key={idx} className="flex gap-4 items-start">
+                            <div className="flex-1 flex gap-2">
+                              <input 
+                                value={url}
+                                onChange={e => {
+                                  const newImages = [...(formData.vehicle_images || [])];
+                                  newImages[idx] = e.target.value;
+                                  setFormData({...formData, vehicle_images: newImages});
+                                }}
+                                className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2e7d32]/50"
+                                placeholder="https://..."
+                              />
+                              <button 
+                                type="button"
+                                onClick={() => {
+                                  const newImages = (formData.vehicle_images || []).filter((_, i) => i !== idx);
+                                  setFormData({...formData, vehicle_images: newImages});
+                                }}
+                                className="p-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                              >
+                                <Trash2 size={18} />
+                              </button>
+                            </div>
+                            {url && (
+                              <div className="w-20 h-14 rounded-lg bg-slate-100 overflow-hidden border border-slate-200 shrink-0">
+                                <img src={url} alt={`Extra ${idx}`} className="w-full h-full object-cover" />
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Features (Comma separated)</label>

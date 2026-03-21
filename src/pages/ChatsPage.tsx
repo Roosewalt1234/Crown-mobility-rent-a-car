@@ -66,6 +66,7 @@ export const ChatsPage: React.FC = () => {
   const [isReviving, setIsReviving] = useState(false);
   const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
   const [isLoading, setIsLoading] = useState(true);
+  const [autoReplyEnabled, setAutoReplyEnabled] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const fetchContacts = async () => {
@@ -77,6 +78,18 @@ export const ChatsPage: React.FC = () => {
       console.error('Error fetching contacts:', err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchSettings = async () => {
+    try {
+      const res = await fetch('/api/settings/general_config');
+      if (res.ok) {
+        const data = await res.json();
+        setAutoReplyEnabled(data.autoReply !== false);
+      }
+    } catch (err) {
+      console.error('Error fetching settings:', err);
     }
   };
 
@@ -92,7 +105,11 @@ export const ChatsPage: React.FC = () => {
 
   useEffect(() => {
     fetchContacts();
-    const interval = setInterval(fetchContacts, 5000);
+    fetchSettings();
+    const interval = setInterval(() => {
+      fetchContacts();
+      fetchSettings();
+    }, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -311,22 +328,22 @@ export const ChatsPage: React.FC = () => {
         {selectedContact ? (
           <>
             {/* Chat Header */}
-            <header className="p-4 md:p-6 border-b border-slate-100 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10">
-              <div className="flex items-center gap-4">
+            <header className="p-4 md:p-6 border-b border-slate-100 flex flex-wrap items-center justify-between gap-4 bg-white/80 backdrop-blur-md sticky top-0 z-10 min-h-[80px]">
+              <div className="flex items-center gap-4 min-w-0">
                 {isMobileView && (
-                  <button onClick={() => setSelectedContact(null)} className="p-2 text-slate-400 hover:text-slate-600">
+                  <button onClick={() => setSelectedContact(null)} className="p-2 text-slate-400 hover:text-slate-600 shrink-0">
                     <ArrowLeft size={20} />
                   </button>
                 )}
-                <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold">
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold shrink-0">
                   {selectedContact.contact_name[0]}
                 </div>
-                <div>
-                  <h3 className="font-bold text-slate-900">{selectedContact.contact_name}</h3>
+                <div className="min-w-0">
+                  <h3 className="font-bold text-slate-900 truncate">{selectedContact.contact_name}</h3>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-400">{selectedContact.contact_phone}</span>
-                    <span className="w-1 h-1 rounded-full bg-slate-300" />
-                    <span className={`text-[10px] font-bold uppercase tracking-widest ${
+                    <span className="text-xs text-slate-400 truncate">{selectedContact.contact_phone}</span>
+                    <span className="w-1 h-1 rounded-full bg-slate-300 shrink-0" />
+                    <span className={`text-[10px] font-bold uppercase tracking-widest shrink-0 ${
                       selectedContact.status === 'converted' ? 'text-green-500' : 'text-blue-500'
                     }`}>
                       {selectedContact.status}
@@ -334,50 +351,57 @@ export const ChatsPage: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-1 md:gap-4">
-                <div className="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 shadow-inner">
-                  <button 
-                    onClick={() => !selectedContact.human_takeover ? null : toggleHumanTakeover(selectedContact.chat_id, true)}
-                    className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 rounded-lg transition-all duration-300 ${
-                      !selectedContact.human_takeover 
-                        ? 'bg-white text-[#2e7d32] shadow-sm ring-1 ring-slate-200' 
-                        : 'text-slate-500 hover:text-slate-700'
-                    }`}
-                  >
-                    <Bot size={14} className={!selectedContact.human_takeover ? 'animate-pulse' : ''} />
-                    <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider">AI</span>
-                  </button>
-                  <button 
-                    onClick={() => selectedContact.human_takeover ? null : toggleHumanTakeover(selectedContact.chat_id, false)}
-                    className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 rounded-lg transition-all duration-300 ${
-                      selectedContact.human_takeover 
-                        ? 'bg-white text-orange-600 shadow-sm ring-1 ring-slate-200' 
-                        : 'text-slate-500 hover:text-slate-700'
-                    }`}
-                  >
-                    <User size={14} />
-                    <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider">Manual</span>
-                  </button>
+              
+              <div className="flex items-center gap-2 md:gap-4 shrink-0 ml-auto">
+                <div className="flex flex-col items-end gap-1">
+                  <span className="text-[8px] text-slate-400 font-bold uppercase tracking-tighter hidden sm:block">Response Mode</span>
+                  <div className="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 shadow-inner">
+                    <button 
+                      onClick={() => !selectedContact.human_takeover ? null : toggleHumanTakeover(selectedContact.chat_id, true)}
+                      className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 rounded-lg transition-all duration-300 ${
+                        !selectedContact.human_takeover 
+                          ? 'bg-white text-[#2e7d32] shadow-sm ring-1 ring-slate-200' 
+                          : 'text-slate-500 hover:text-slate-700'
+                      }`}
+                    >
+                      <Bot size={14} className={!selectedContact.human_takeover ? 'animate-pulse' : ''} />
+                      <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider">AI</span>
+                    </button>
+                    <button 
+                      onClick={() => selectedContact.human_takeover ? null : toggleHumanTakeover(selectedContact.chat_id, false)}
+                      className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 rounded-lg transition-all duration-300 ${
+                        selectedContact.human_takeover 
+                          ? 'bg-white text-orange-600 shadow-sm ring-1 ring-slate-200' 
+                          : 'text-slate-500 hover:text-slate-700'
+                      }`}
+                    >
+                      <User size={14} />
+                      <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider">Manual</span>
+                    </button>
+                  </div>
                 </div>
                 
                 <button 
                   onClick={handleRevive}
-                  disabled={isReviving}
-                  className="flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-full border border-indigo-100 hover:bg-indigo-100 transition-all disabled:opacity-50 shadow-sm"
-                  title="AI Revive: Send a personalized nudge to this customer"
+                  disabled={isReviving || selectedContact.human_takeover || !autoReplyEnabled}
+                  className="flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-full border border-indigo-100 hover:bg-indigo-100 transition-all disabled:opacity-50 shadow-sm shrink-0"
+                  title={!autoReplyEnabled ? "Auto-reply is globally disabled" : selectedContact.human_takeover ? "Cannot revive in manual mode" : "AI Revive: Send a personalized nudge to this customer"}
                 >
                   <Sparkles size={14} className={isReviving ? 'animate-spin' : ''} />
-                  <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider">Revive</span>
+                  <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider hidden sm:inline">Revive</span>
                 </button>
-                <button className="hidden sm:block p-2 text-slate-400 hover:text-[#2e7d32] transition-colors">
-                  <Phone size={20} />
-                </button>
-                <button className="hidden sm:block p-2 text-slate-400 hover:text-[#2e7d32] transition-colors">
-                  <Video size={20} />
-                </button>
-                <button className="p-2 text-slate-400 hover:text-slate-600">
-                  <MoreVertical size={20} />
-                </button>
+
+                <div className="flex items-center gap-1">
+                  <button className="hidden sm:block p-2 text-slate-400 hover:text-[#2e7d32] transition-colors">
+                    <Phone size={20} />
+                  </button>
+                  <button className="hidden sm:block p-2 text-slate-400 hover:text-[#2e7d32] transition-colors">
+                    <Video size={20} />
+                  </button>
+                  <button className="p-2 text-slate-400 hover:text-slate-600">
+                    <MoreVertical size={20} />
+                  </button>
+                </div>
               </div>
             </header>
 

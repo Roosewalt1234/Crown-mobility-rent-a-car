@@ -207,7 +207,7 @@ async function startServer() {
     try {
       const { 
         vehicle_id, vehicle_make, vehicle_model, vehicle_year, 
-        fleet_type, vehicle_image_url, car_description, 
+        fleet_type, vehicle_image_url, vehicle_images, car_description, 
         day_price, week_price, month_price, 
         milage_limit, extra_km_charge, car_features,
         deposit_amount
@@ -215,25 +215,26 @@ async function startServer() {
       
       // Handle both column names
       const finalDeposit = deposit_amount ?? req.body['deposit - amount'] ?? 3000;
+      const finalImages = vehicle_images || [];
 
       const result = await query(
         `INSERT INTO fleet_stock (
           vehicle_id, vehicle_make, vehicle_model, vehicle_year, 
-          fleet_type, vehicle_image_url, car_description, 
+          fleet_type, vehicle_image_url, vehicle_images, car_description, 
           day_price, week_price, month_price, 
           milage_limit, extra_km_charge, car_features,
           deposit_amount
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
         ON CONFLICT (vehicle_id) DO UPDATE SET
           vehicle_make = $2, vehicle_model = $3, vehicle_year = $4,
-          fleet_type = $5, vehicle_image_url = $6, car_description = $7,
-          day_price = $8, week_price = $9, month_price = $10,
-          milage_limit = $11, extra_km_charge = $12, car_features = $13,
-          deposit_amount = $14
+          fleet_type = $5, vehicle_image_url = $6, vehicle_images = $7, car_description = $8,
+          day_price = $9, week_price = $10, month_price = $11,
+          milage_limit = $12, extra_km_charge = $13, car_features = $14,
+          deposit_amount = $15
         RETURNING *`,
         [
           vehicle_id || `v-${Date.now()}`, vehicle_make, vehicle_model, vehicle_year, 
-          fleet_type, vehicle_image_url, car_description, 
+          fleet_type, vehicle_image_url, JSON.stringify(finalImages), car_description, 
           day_price, week_price, month_price, 
           milage_limit, extra_km_charge, car_features,
           finalDeposit
@@ -540,6 +541,20 @@ async function startServer() {
                 // 7. Send via WAHA
                 console.log(`[AI-DEBUG] Attempting to send via WAHA to ${chat_id}...`);
                 await wahaService.sendMessage(chat_id, aiResponse.text);
+
+                // 8. If AI requested to send images
+                const anyAiResponse = aiResponse as any;
+                if (anyAiResponse.sendImages && anyAiResponse.imageArgs?.image_urls) {
+                  console.log(`[AI-DEBUG] AI requested to send ${anyAiResponse.imageArgs.image_urls.length} images.`);
+                  for (const url of anyAiResponse.imageArgs.image_urls) {
+                    await wahaService.sendImage(chat_id, url);
+                    // Save image message to DB
+                    await query(
+                      "INSERT INTO messages (chat_id, body, direction, is_ai_reply, media_url, media_type) VALUES ($1, $2, $3, $4, $5, $6)",
+                      [chat_id, "Image sent", 'outgoing', true, url, 'image/jpeg']
+                    );
+                  }
+                }
               } else {
                 console.warn(`[AI-DEBUG] AI failed to generate a response text.`);
               }
@@ -569,6 +584,20 @@ async function startServer() {
       const { chatId } = req.params;
       const normalizedId = normalizeChatId(chatId);
       
+      // 0. Check global auto-reply setting
+      const configResult = await query("SELECT value FROM settings WHERE key = 'general_config'");
+      const config = configResult.rows[0]?.value;
+      if (config && config.autoReply === false) {
+        return res.status(403).json({ error: "Auto-reply is globally disabled." });
+      }
+
+      // 0.1 Check contact human_takeover status
+      const contactResult = await query("SELECT human_takeover FROM contacts WHERE chat_id = $1", [normalizedId]);
+      const contact = contactResult.rows[0];
+      if (contact?.human_takeover) {
+        return res.status(403).json({ error: "Cannot revive in manual mode." });
+      }
+
       // 1. Get history
       const historyResult = await query(
         "SELECT body, direction, is_ai_reply, media_url, media_type FROM messages WHERE chat_id = $1 ORDER BY created_at DESC LIMIT 10",
@@ -612,7 +641,19 @@ async function startServer() {
           [chatId, aiResponse.text, 'outgoing', true]
         );
 
-        // 6. Update contact
+        // 6. If AI requested to send images
+        const anyAiResponse = aiResponse as any;
+        if (anyAiResponse.sendImages && anyAiResponse.imageArgs?.image_urls) {
+          for (const url of anyAiResponse.imageArgs.image_urls) {
+            await wahaService.sendImage(chatId, url);
+            await query(
+              "INSERT INTO messages (chat_id, body, direction, is_ai_reply, media_url, media_type) VALUES ($1, $2, $3, $4, $5, $6)",
+              [chatId, "Image sent", 'outgoing', true, url, 'image/jpeg']
+            );
+          }
+        }
+
+        // 7. Update contact
         await query(
           "UPDATE contacts SET last_message_preview = $1, last_message_at = CURRENT_TIMESTAMP WHERE chat_id = $2",
           [aiResponse.text, chatId]

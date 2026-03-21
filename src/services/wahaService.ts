@@ -48,5 +48,41 @@ export const wahaService = {
     } catch (error) {
       console.error('[WAHA-DEBUG] Network error sending message:', error);
     }
+  },
+
+  async sendImage(chatId: string, imageUrl: string, caption?: string) {
+    const wahaUrl = process.env.WAHA_URL;
+    const wahaKey = process.env.WAHA_API_KEY;
+    const sessionName = process.env.WAHA_SESSION || 'default';
+
+    if (!wahaUrl) return;
+
+    try {
+      let baseUrl = wahaUrl.replace(/\/$/, '');
+      if (baseUrl.endsWith('/api/sendText')) {
+        baseUrl = baseUrl.replace(/\/api\/sendText$/, '');
+      }
+      
+      const url = `${baseUrl}/api/sendImage`;
+      const payload = {
+        chatId: chatId,
+        file: imageUrl,
+        caption: caption,
+        session: sessionName,
+      };
+
+      await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(wahaKey ? { 'X-Api-Key': wahaKey } : {}),
+          ...(wahaKey ? { 'Authorization': `Bearer ${wahaKey}` } : {}),
+        },
+        body: JSON.stringify(payload),
+      });
+      console.log(`[WAHA-DEBUG] Image sent to ${chatId}: ${imageUrl}`);
+    } catch (error) {
+      console.error('[WAHA-DEBUG] Error sending image:', error);
+    }
   }
 };

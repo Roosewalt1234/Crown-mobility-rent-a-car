@@ -8,6 +8,41 @@ export const heartbeatService = {
     try {
       console.log("[HEARTBEAT] Checking for dead conversations...");
       
+      // 0. Check global auto-reply setting
+      const settingsResult = await query("SELECT key, value FROM settings WHERE key IN ('general_config', 'dnd_config')");
+      const settings: Record<string, any> = {};
+      settingsResult.rows.forEach(r => settings[r.key] = r.value);
+
+      const generalConfig = settings['general_config'];
+      const dndConfig = settings['dnd_config'];
+
+      if (generalConfig && (generalConfig.autoReply === false || generalConfig.autoReply === 'false')) {
+        console.log("[HEARTBEAT] Auto-reply is globally disabled. Skipping revival.");
+        return;
+      }
+
+      // 0.1 Check DND
+      if (dndConfig?.enabled) {
+        const now = new Date();
+        // Dubai Time (UTC+4)
+        const dubaiTime = new Date(now.getTime() + (4 * 60 * 60 * 1000));
+        const currentHour = dubaiTime.getUTCHours();
+        const currentMinute = dubaiTime.getUTCMinutes();
+        const currentTimeStr = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
+        
+        const [startH, startM] = dndConfig.start.split(':').map(Number);
+        const [endH, endM] = dndConfig.end.split(':').map(Number);
+        
+        const isDnd = (startH < endH) 
+          ? (currentTimeStr >= dndConfig.start && currentTimeStr <= dndConfig.end)
+          : (currentTimeStr >= dndConfig.start || currentTimeStr <= dndConfig.end);
+          
+        if (isDnd) {
+          console.log(`[HEARTBEAT] DND is active (${currentTimeStr}). Skipping revival.`);
+          return;
+        }
+      }
+
       // Find conversations that have been silent for > 15 minutes
       // and haven't been revived for the current silence
       // and are not in human takeover mode

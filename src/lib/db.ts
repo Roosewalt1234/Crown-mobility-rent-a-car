@@ -93,6 +93,7 @@ export const initDb = async () => {
         vehicle_year TEXT NOT NULL,
         fleet_type TEXT,
         vehicle_image_url TEXT,
+        vehicle_images JSONB DEFAULT '[]',
         car_description TEXT,
         day_price NUMERIC,
         week_price NUMERIC,
@@ -104,6 +105,11 @@ export const initDb = async () => {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    // Migration: Add vehicle_images column if it doesn't exist
+    await query(`
+      ALTER TABLE fleet_stock ADD COLUMN IF NOT EXISTS vehicle_images JSONB DEFAULT '[]';
+    `).catch(() => {});
 
     await query(`
       CREATE TABLE IF NOT EXISTS learning_suggestions (
