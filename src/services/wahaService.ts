@@ -64,9 +64,13 @@ export const wahaService = {
       }
       
       const url = `${baseUrl}/api/sendImage`;
+      
+      // Modern WAHA versions often expect an object for the file property when using a URL
       const payload = {
         chatId: chatId,
-        file: imageUrl,
+        file: {
+          url: imageUrl
+        },
         caption: caption,
         session: sessionName,
       };
