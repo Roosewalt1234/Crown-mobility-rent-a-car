@@ -284,6 +284,7 @@ export const ManageVehiclesPage: React.FC = () => {
                 <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Vehicle</th>
                 <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Type</th>
                 <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pricing (Day)</th>
+                <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pricing (Month)</th>
                 <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</th>
                 <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
               </tr>
@@ -291,7 +292,7 @@ export const ManageVehiclesPage: React.FC = () => {
             <tbody className="divide-y divide-slate-50">
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="px-8 py-20 text-center">
+                  <td colSpan={6} className="px-8 py-20 text-center">
                     <div className="flex flex-col items-center gap-3">
                       <Loader2 className="w-10 h-10 text-[#2e7d32] animate-spin" />
                       <p className="text-slate-500 font-medium">Loading vehicles...</p>
@@ -300,7 +301,7 @@ export const ManageVehiclesPage: React.FC = () => {
                 </tr>
               ) : filteredVehicles.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-8 py-20 text-center">
+                  <td colSpan={6} className="px-8 py-20 text-center">
                     <div className="flex flex-col items-center gap-3 text-slate-400">
                       <Car size={48} />
                       <p className="font-medium">No vehicles found</p>
@@ -341,6 +342,10 @@ export const ManageVehiclesPage: React.FC = () => {
                     <td className="px-8 py-5">
                       <p className="font-bold text-slate-900">AED {vehicle.day_price}</p>
                       <p className="text-[10px] text-slate-400 uppercase font-bold">Per Day</p>
+                    </td>
+                    <td className="px-8 py-5">
+                      <p className="font-bold text-slate-900">AED {vehicle.month_price}</p>
+                      <p className="text-[10px] text-slate-400 uppercase font-bold">Per Month</p>
                     </td>
                     <td className="px-8 py-5">
                       <div className="flex items-center gap-2">
