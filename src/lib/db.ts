@@ -32,10 +32,17 @@ export const initDb = async () => {
         unread_count INTEGER DEFAULT 0,
         status TEXT DEFAULT 'new',
         human_takeover BOOLEAN DEFAULT FALSE,
-        revive_sent_at TIMESTAMP WITH TIME ZONE
+        revive_sent_at TIMESTAMP WITH TIME ZONE,
+        manager_notified_at TIMESTAMP WITH TIME ZONE
       );
     `);
     
+    // Migration: Add columns to contacts if they don't exist
+    await query(`
+      ALTER TABLE contacts ADD COLUMN IF NOT EXISTS revive_sent_at TIMESTAMP WITH TIME ZONE;
+      ALTER TABLE contacts ADD COLUMN IF NOT EXISTS manager_notified_at TIMESTAMP WITH TIME ZONE;
+    `).catch(() => {});
+
     await query(`
       CREATE TABLE IF NOT EXISTS messages (
         id SERIAL PRIMARY KEY,

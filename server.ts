@@ -479,6 +479,26 @@ async function startServer() {
                 if (aiResponse.escalated) {
                   console.log(`[AI-DEBUG] AI requested escalation. Setting human_takeover = true for ${chat_id}`);
                   await query("UPDATE contacts SET human_takeover = true WHERE chat_id = $1", [chat_id]);
+
+                  // Notify Manager (Only once)
+                  const contactResult = await query("SELECT contact_name, contact_phone, manager_notified_at FROM contacts WHERE chat_id = $1", [chat_id]);
+                  const contact = contactResult.rows[0];
+
+                  if (contact && !contact.manager_notified_at) {
+                    const generalConfigResult = await query("SELECT value FROM settings WHERE key = 'general_config'");
+                    const generalConfig = generalConfigResult.rows[0]?.value;
+                    const managerId = generalConfig?.escalationId || "971507172790@c.us";
+
+                    if (managerId) {
+                      const notificationMsg = `🚨 This client Need your Attention\n\nContact name: ${contact.contact_name}\nContact number: ${contact.contact_phone}\nReason: ${aiResponse.escalationArgs?.reason || 'AI Escalation'}`;
+                      
+                      console.log(`[AI-DEBUG] Notifying manager ${managerId} about ${chat_id}`);
+                      await wahaService.sendMessage(managerId, notificationMsg);
+                      
+                      // Update manager_notified_at
+                      await query("UPDATE contacts SET manager_notified_at = CURRENT_TIMESTAMP WHERE chat_id = $1", [chat_id]);
+                    }
+                  }
                 }
 
                 // 5. Save AI response to DB
@@ -598,6 +618,10 @@ async function startServer() {
       if (human_takeover !== undefined) {
         updateFields.push(`human_takeover = $${i++}`);
         values.push(human_takeover);
+        // Reset manager_notified_at if switching to AI mode
+        if (human_takeover === false) {
+          updateFields.push(`manager_notified_at = NULL`);
+        }
       }
       if (status !== undefined) {
         updateFields.push(`status = $${i++}`);

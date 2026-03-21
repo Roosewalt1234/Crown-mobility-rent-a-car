@@ -70,6 +70,32 @@ export const heartbeatService = {
       );
 
       if (aiResponse && aiResponse.text) {
+        // If AI escalated during revival, set human_takeover to true
+        if (aiResponse.escalated) {
+          console.log(`[HEARTBEAT] AI requested escalation for ${chatId}`);
+          await query("UPDATE contacts SET human_takeover = true WHERE chat_id = $1", [chatId]);
+
+          // Notify Manager (Only once)
+          const contactResult = await query("SELECT contact_name, contact_phone, manager_notified_at FROM contacts WHERE chat_id = $1", [chatId]);
+          const contact = contactResult.rows[0];
+
+          if (contact && !contact.manager_notified_at) {
+            const generalConfigResult = await query("SELECT value FROM settings WHERE key = 'general_config'");
+            const generalConfig = generalConfigResult.rows[0]?.value;
+            const managerId = generalConfig?.escalationId || "971507172790@c.us";
+
+            if (managerId) {
+              const notificationMsg = `🚨 This client Need your Attention (Revival Escalation)\n\nContact name: ${contact.contact_name}\nContact number: ${contact.contact_phone}\nReason: ${aiResponse.escalationArgs?.reason || 'AI Revival Escalation'}`;
+              
+              console.log(`[HEARTBEAT] Notifying manager ${managerId} about ${chatId}`);
+              await wahaService.sendMessage(managerId, notificationMsg);
+              
+              // Update manager_notified_at
+              await query("UPDATE contacts SET manager_notified_at = CURRENT_TIMESTAMP WHERE chat_id = $1", [chatId]);
+            }
+          }
+        }
+
         // 4. Send via WAHA
         await wahaService.sendMessage(chatId, aiResponse.text);
 
