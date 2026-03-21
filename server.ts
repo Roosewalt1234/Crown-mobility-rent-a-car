@@ -9,6 +9,7 @@ import { chatWithAI } from "./src/services/geminiService.ts";
 import { fleetService } from "./src/services/fleetService.ts";
 import { wahaService } from "./src/services/wahaService.ts";
 import { learningService } from "./src/services/learningService.ts";
+import { heartbeatService } from "./src/services/heartbeatService.ts";
 import { createClient } from '@supabase/supabase-js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -731,6 +732,9 @@ async function startServer() {
 
   app.listen(Number(port), '0.0.0.0', () => {
     console.log(`[VERSION] Server v1.0.3 started on http://localhost:${port}`);
+    
+    // Start Heartbeat Service
+    heartbeatService.start();
   });
 }
 

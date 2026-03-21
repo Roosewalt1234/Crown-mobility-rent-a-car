@@ -31,7 +31,8 @@ export const initDb = async () => {
         last_message_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         unread_count INTEGER DEFAULT 0,
         status TEXT DEFAULT 'new',
-        human_takeover BOOLEAN DEFAULT FALSE
+        human_takeover BOOLEAN DEFAULT FALSE,
+        revive_sent_at TIMESTAMP WITH TIME ZONE
       );
     `);
     
