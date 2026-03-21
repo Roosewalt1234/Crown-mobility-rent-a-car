@@ -140,7 +140,10 @@ export const ManageVehiclesPage: React.FC = () => {
         body: JSON.stringify(payload)
       });
       
-      if (!res.ok) throw new Error('Failed to save vehicle');
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to save vehicle');
+      }
       
       toast.success(editingVehicle ? 'Vehicle updated successfully' : 'Vehicle added successfully');
       
@@ -278,16 +281,18 @@ export const ManageVehiclesPage: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-8 py-5 text-right">
-                      <div className="flex justify-end items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex justify-end items-center gap-2 transition-opacity">
                         <button 
                           onClick={() => handleOpenModal(vehicle)}
-                          className="p-2 text-slate-400 hover:text-[#2e7d32] transition-colors"
+                          className="p-2 text-slate-400 hover:text-[#2e7d32] hover:bg-slate-100 rounded-lg transition-all"
+                          title="Edit Vehicle"
                         >
                           <Edit2 size={16} />
                         </button>
                         <button 
                           onClick={() => handleDelete(vehicle.vehicle_id)}
-                          className="p-2 text-slate-400 hover:text-red-500 transition-colors"
+                          className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                          title="Delete Vehicle"
                         >
                           <Trash2 size={16} />
                         </button>

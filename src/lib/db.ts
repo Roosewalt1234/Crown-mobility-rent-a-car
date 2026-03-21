@@ -70,7 +70,7 @@ export const initDb = async () => {
     await query(`
       CREATE TABLE IF NOT EXISTS fleet_stock (
         id SERIAL PRIMARY KEY,
-        vehicle_id TEXT UNIQUE,
+        vehicle_id TEXT UNIQUE NOT NULL,
         vehicle_make TEXT NOT NULL,
         vehicle_model TEXT NOT NULL,
         vehicle_year TEXT NOT NULL,
@@ -87,6 +87,24 @@ export const initDb = async () => {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    // Ensure all existing vehicles have a vehicle_id
+    await query("UPDATE fleet_stock SET vehicle_id = 'v-' || id WHERE vehicle_id IS NULL");
+    await query("ALTER TABLE fleet_stock ALTER COLUMN vehicle_id SET NOT NULL").catch(() => {});
+
+    // Handle deposit_amount column migration/creation
+    await query(`
+      DO $$ 
+      BEGIN 
+        -- If the old column with spaces exists, rename it
+        IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='fleet_stock' AND column_name='deposit - amount') THEN
+          ALTER TABLE fleet_stock RENAME COLUMN "deposit - amount" TO deposit_amount;
+        -- If neither exists, add the correct one
+        ELSIF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='fleet_stock' AND column_name='deposit_amount') THEN
+          ALTER TABLE fleet_stock ADD COLUMN deposit_amount NUMERIC DEFAULT 3000;
+        END IF;
+      END $$;
+    `).catch(err => console.error('Migration error (deposit_amount):', err));
 
     console.log('Database tables verified/created successfully');
   } catch (err) {

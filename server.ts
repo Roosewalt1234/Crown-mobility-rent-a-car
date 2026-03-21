@@ -238,9 +238,9 @@ async function startServer() {
         ]
       );
       res.json(result.rows[0]);
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: "Internal server error" });
+    } catch (err: any) {
+      console.error("[API] Error in POST /api/fleet:", err);
+      res.status(500).json({ error: err.message || "Internal server error" });
     }
   });
 
