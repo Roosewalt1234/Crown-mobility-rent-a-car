@@ -107,7 +107,7 @@ export const heartbeatService = {
         The customer has stopped replying for more than 15 minutes. 
         Your goal is to politely revive the conversation.
         
-        USER SUGGESTION FOR NUDGE: "Hello Sir, Are you still interested? We can also offer other cars if your budget is less."
+        USER SUGGESTION FOR NUDGE: "Hello, Are you still interested? We can also offer other cars if your budget is less."
         
         Use the suggestion above as a base, but make it natural and friendly. 
         Mention a car if relevant from history.
