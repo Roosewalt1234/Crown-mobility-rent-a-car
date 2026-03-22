@@ -594,8 +594,8 @@ async function startServer() {
 
               // If AI escalated, set human_takeover to true
               if (aiResponse.escalated) {
-                console.log(`[AI-DEBUG] AI requested escalation. Setting human_takeover = true and manager_notification = 'Yes' for ${chat_id}`);
-                await query("UPDATE contacts SET human_takeover = true, manager_notification = 'Yes' WHERE chat_id = $1", [chat_id]);
+                console.log(`[AI-DEBUG] AI requested escalation. Setting human_takeover = true and manager_notification = true for ${chat_id}`);
+                await query("UPDATE contacts SET human_takeover = true, manager_notification = true WHERE chat_id = $1", [chat_id]);
 
                 // Notify Manager (Only once)
                 const contactResult = await query("SELECT contact_name, contact_phone, manager_notified_at, human_takeover FROM contacts WHERE chat_id = $1", [chat_id]);
@@ -808,7 +808,7 @@ async function startServer() {
         
         // Update manager_notification based on human_takeover
         updateFields.push(`manager_notification = $${i++}`);
-        values.push(human_takeover ? 'Yes' : 'No');
+        values.push(human_takeover ? true : false);
 
         // Reset manager_notified_at if switching to AI mode
         if (human_takeover === false) {
