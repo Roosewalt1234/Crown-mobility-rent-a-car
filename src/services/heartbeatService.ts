@@ -129,8 +129,8 @@ export const heartbeatService = {
       if (aiResponse && aiResponse.text) {
         // If AI escalated during revival, set human_takeover to true
         if (aiResponse.escalated) {
-          console.log(`[HEARTBEAT] AI requested escalation for ${chatId}`);
-          await query("UPDATE contacts SET human_takeover = true WHERE chat_id = $1", [chatId]);
+          console.log(`[HEARTBEAT] AI requested escalation for ${chatId}. Setting human_takeover = true and manager_notification = 'Yes'`);
+          await query("UPDATE contacts SET human_takeover = true, manager_notification = 'Yes' WHERE chat_id = $1", [chatId]);
 
           // Notify Manager (Only once)
           const contactResult = await query("SELECT contact_name, contact_phone, manager_notified_at, human_takeover FROM contacts WHERE chat_id = $1", [chatId]);
