@@ -378,7 +378,14 @@ async function startServer() {
       const raw_body = payload.body || payload.message || payload.text;
       const raw_direction = payload.direction;
       const is_ai_reply = req.body.is_ai_reply === true;
-      const contact_name = payload.contact_name || payload.sender?.name || payload.pushName;
+      
+      // Improve name extraction
+      let contact_name = payload.contact_name || payload.sender?.name || payload.pushName;
+      if (!contact_name && raw_chat_id) {
+        // Try to extract from chat_id (e.g. 971507172790@c.us -> 971507172790)
+        contact_name = raw_chat_id.split('@')[0];
+      }
+      
       const contact_phone = payload.contact_phone || payload.sender?.id || raw_chat_id;
 
       // 2. Determine direction

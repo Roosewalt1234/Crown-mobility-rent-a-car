@@ -294,7 +294,9 @@ export const ChatsPage: React.FC<{ mode?: 'ai' | 'manual' | 'all' }> = ({ mode =
                 >
                   <div className="relative">
                     <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold overflow-hidden">
-                      {contact.contact_name[0]}
+                      {contact.contact_name && contact.contact_name !== 'Unknown' 
+                        ? contact.contact_name[0] 
+                        : contact.contact_phone?.[0] || contact.chat_id?.[0] || '?'}
                     </div>
                     {contact.status === 'converted' && (
                       <div className="absolute -bottom-1 -right-1 bg-green-500 text-white rounded-full p-0.5 border-2 border-white">
@@ -305,7 +307,11 @@ export const ChatsPage: React.FC<{ mode?: 'ai' | 'manual' | 'all' }> = ({ mode =
                   <div className="flex-1 text-left min-w-0">
                       <div className="flex justify-between items-center mb-0.5">
                         <div className="flex items-center gap-2">
-                          <h4 className="font-bold text-slate-900 truncate">{contact.contact_name}</h4>
+                          <h4 className="font-bold text-slate-900 truncate">
+                            {contact.contact_name && contact.contact_name !== 'Unknown' 
+                              ? contact.contact_name 
+                              : contact.contact_phone || contact.chat_id.split('@')[0]}
+                          </h4>
                           {contact.human_takeover && (
                             <span className="px-1.5 py-0.5 rounded-md bg-orange-50 text-orange-600 text-[8px] font-black uppercase tracking-tighter border border-orange-100">
                               Manual
@@ -342,18 +348,28 @@ export const ChatsPage: React.FC<{ mode?: 'ai' | 'manual' | 'all' }> = ({ mode =
             {/* Chat Header */}
             <header className="p-4 md:p-6 border-b border-slate-100 flex flex-wrap items-center justify-between gap-4 bg-white/80 backdrop-blur-md sticky top-0 z-10 min-h-[80px]">
               <div className="flex items-center gap-4 min-w-0">
-                {isMobileView && (
-                  <button onClick={() => setSelectedContact(null)} className="p-2 text-slate-400 hover:text-slate-600 shrink-0">
-                    <ArrowLeft size={20} />
-                  </button>
-                )}
+                {/* Back Button (Always visible when a contact is selected) */}
+                <button 
+                  onClick={() => setSelectedContact(null)} 
+                  className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-full transition-colors shrink-0"
+                  title="Back to list"
+                >
+                  <ArrowLeft size={20} />
+                </button>
+
                 <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold shrink-0">
-                  {selectedContact.contact_name[0]}
+                  {(selectedContact.contact_name && selectedContact.contact_name !== 'Unknown' ? selectedContact.contact_name[0] : selectedContact.contact_phone?.[0] || '?')}
                 </div>
                 <div className="min-w-0">
-                  <h3 className="font-bold text-slate-900 truncate">{selectedContact.contact_name}</h3>
+                  <h3 className="font-bold text-slate-900 truncate">
+                    {selectedContact.contact_name && selectedContact.contact_name !== 'Unknown' 
+                      ? selectedContact.contact_name 
+                      : selectedContact.contact_phone || selectedContact.chat_id.split('@')[0]}
+                  </h3>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-400 truncate">{selectedContact.contact_phone}</span>
+                    <span className="text-xs text-slate-400 truncate">
+                      {selectedContact.contact_phone || selectedContact.chat_id}
+                    </span>
                     <span className="w-1 h-1 rounded-full bg-slate-300 shrink-0" />
                     <span className={`text-[10px] font-bold uppercase tracking-widest shrink-0 ${
                       selectedContact.status === 'converted' ? 'text-green-500' : 'text-blue-500'
