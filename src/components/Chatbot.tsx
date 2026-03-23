@@ -25,6 +25,8 @@ export const Chatbot = () => {
   const [autoReplyEnabled, setAutoReplyEnabled] = useState(true);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const lastMessageCountRef = useRef(0);
   const recognitionRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -115,8 +117,20 @@ export const Chatbot = () => {
   }, []);
 
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    const container = scrollContainerRef.current;
+    if (container) {
+      // Check if user is near the bottom (within 150px)
+      const isNearBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 150;
+      
+      // Check if the last message is from the user
+      const lastMessage = messages[messages.length - 1];
+      const isUserMessage = lastMessage?.role === 'user';
+
+      if (isNearBottom || isUserMessage || messages.length === 1) {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }
+      
+      lastMessageCountRef.current = messages.length;
     }
   }, [messages]);
 
@@ -357,7 +371,10 @@ export const Chatbot = () => {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-hide">
+            <div 
+              ref={scrollContainerRef}
+              className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-hide"
+            >
               {messages.map((msg, i) => (
                 <motion.div
                   key={i}

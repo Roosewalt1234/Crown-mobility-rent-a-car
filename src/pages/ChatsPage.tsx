@@ -72,6 +72,8 @@ export const ChatsPage: React.FC<{ mode?: 'ai' | 'manual' | 'all' }> = ({ mode =
   const [isLoading, setIsLoading] = useState(true);
   const [autoReplyEnabled, setAutoReplyEnabled] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const lastMessageCountRef = useRef(0);
 
   const fetchContacts = async () => {
     try {
@@ -147,7 +149,24 @@ export const ChatsPage: React.FC<{ mode?: 'ai' | 'manual' | 'all' }> = ({ mode =
   }, []);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const container = scrollContainerRef.current;
+    if (container) {
+      // Check if user is near the bottom (within 150px)
+      const isNearBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 150;
+      
+      // Also check if the message count increased (new message arrived)
+      const hasNewMessage = messages.length > lastMessageCountRef.current;
+      
+      // If user is near bottom OR they just sent a message (last message is outgoing)
+      const lastMessage = messages[messages.length - 1];
+      const isUserMessage = lastMessage?.direction === 'outgoing' && !lastMessage?.is_ai_reply;
+
+      if (isNearBottom || isUserMessage || messages.length === 1) {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }
+      
+      lastMessageCountRef.current = messages.length;
+    }
   }, [messages]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -434,7 +453,10 @@ export const ChatsPage: React.FC<{ mode?: 'ai' | 'manual' | 'all' }> = ({ mode =
             </header>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/30 relative">
+            <div 
+              ref={scrollContainerRef}
+              className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/30 relative"
+            >
               {selectedContact.human_takeover && (
                 <div className="sticky top-0 z-20 flex justify-center mb-4">
                   <div className="bg-orange-50 border border-orange-100 text-orange-700 px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-sm flex items-center gap-2 backdrop-blur-md bg-white/60">
