@@ -325,21 +325,22 @@ export const ChatsPage: React.FC<{ mode?: 'ai' | 'manual' | 'all' }> = ({ mode =
                   </div>
                   <div className="flex-1 text-left min-w-0">
                       <div className="flex justify-between items-center mb-0.5">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-bold text-slate-900 truncate">
-                            {contact.contact_name && contact.contact_name !== 'Unknown' 
-                              ? contact.contact_name 
-                              : contact.contact_phone || contact.chat_id.split('@')[0]}
-                          </h4>
-                          {contact.human_takeover && (
-                            <span className="px-1.5 py-0.5 rounded-md bg-orange-50 text-orange-600 text-[8px] font-black uppercase tracking-tighter border border-orange-100">
-                              Manual
-                            </span>
-                          )}
-                        </div>
+                        <h4 className="font-bold text-slate-900 truncate">
+                          {contact.contact_phone || contact.chat_id.split('@')[0]}
+                        </h4>
                         <span className="text-[10px] text-slate-400 font-medium">
                           {new Date(contact.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
+                      </div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="text-[10px] font-medium text-slate-500 truncate">
+                          {contact.contact_name && contact.contact_name !== 'Unknown' ? contact.contact_name : 'No Name'}
+                        </p>
+                        {contact.human_takeover && (
+                          <span className="px-1.5 py-0.5 rounded-md bg-orange-50 text-orange-600 text-[8px] font-black uppercase tracking-tighter border border-orange-100">
+                            Manual
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center justify-between">
                         <p className="text-xs text-slate-500 truncate flex-1">{contact.last_message_preview}</p>

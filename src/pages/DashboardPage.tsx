@@ -39,7 +39,7 @@ export const DashboardPage: React.FC = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await fetch('/api/stats');
+        const res = await fetch(`/api/stats?period=${period}`);
         if (res.ok) {
           const stats = await res.json();
           setData(stats);
@@ -53,7 +53,7 @@ export const DashboardPage: React.FC = () => {
     fetchStats();
     const interval = setInterval(fetchStats, 30000); // Refresh every 30s
     return () => clearInterval(interval);
-  }, []);
+  }, [period]);
 
   if (isLoading) {
     return (
@@ -64,14 +64,14 @@ export const DashboardPage: React.FC = () => {
   }
 
   const stats = [
-    { label: 'Total Messages', value: data?.messages?.total?.toLocaleString() || '0', icon: MessageSquare, color: 'text-blue-500', bg: 'bg-blue-50', trend: '+12%' },
-    { label: 'Incoming', value: data?.messages?.incoming?.toLocaleString() || '0', icon: ArrowDownLeft, color: 'text-green-500', bg: 'bg-green-50', trend: '+8%' },
-    { label: 'Outgoing', value: data?.messages?.outgoing?.toLocaleString() || '0', icon: ArrowUpRight, color: 'text-purple-500', bg: 'bg-purple-50', trend: '+15%' },
+    { label: 'Total Messages', value: data?.messages?.total?.toLocaleString() || '0', icon: MessageSquare, color: 'text-blue-500', bg: 'bg-blue-50', trend: `${data?.messages?.total_trend >= 0 ? '+' : ''}${data?.messages?.total_trend}%` },
+    { label: 'Incoming', value: data?.messages?.incoming?.toLocaleString() || '0', icon: ArrowDownLeft, color: 'text-green-500', bg: 'bg-green-50', trend: `${data?.messages?.incoming_trend >= 0 ? '+' : ''}${data?.messages?.incoming_trend}%` },
+    { label: 'Outgoing', value: data?.messages?.outgoing?.toLocaleString() || '0', icon: ArrowUpRight, color: 'text-purple-500', bg: 'bg-purple-50', trend: `${data?.messages?.outgoing_trend >= 0 ? '+' : ''}${data?.messages?.outgoing_trend}%` },
     { label: 'AI Replies', value: data?.messages?.ai?.toLocaleString() || '0', icon: Bot, color: 'text-indigo-500', bg: 'bg-indigo-50', trend: `${Math.round((data?.messages?.ai / (data?.messages?.outgoing || 1)) * 100)}%`, isBadge: true },
   ];
 
   const contactStats = [
-    { label: 'Total Contacts', value: data?.contacts?.total?.toLocaleString() || '0', icon: Users, color: 'text-slate-500', bg: 'bg-slate-50' },
+    { label: 'Total Contacts', value: data?.contacts?.total?.toLocaleString() || '0', icon: Users, color: 'text-slate-500', bg: 'bg-slate-50', trend: `${data?.contacts?.total_trend >= 0 ? '+' : ''}${data?.contacts?.total_trend}%` },
     { label: 'New (24h)', value: data?.contacts?.new_24h?.toLocaleString() || '0', icon: UserPlus, color: 'text-emerald-500', bg: 'bg-emerald-50' },
     { label: 'Converted', value: data?.contacts?.converted?.toLocaleString() || '0', icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' },
     { label: 'Human Takeovers', value: data?.contacts?.human_takeover?.toLocaleString() || '0', icon: HandMetal, color: 'text-orange-500', bg: 'bg-orange-50' },
@@ -130,8 +130,8 @@ export const DashboardPage: React.FC = () => {
                   {stat.trend} AI Rate
                 </span>
               ) : (
-                <span className="flex items-center gap-1 text-green-600 text-xs font-bold">
-                  <TrendingUp size={12} />
+                <span className={`flex items-center gap-1 text-xs font-bold ${stat.trend.startsWith('-') ? 'text-red-500' : 'text-green-600'}`}>
+                  {stat.trend.startsWith('-') ? <ArrowDownLeft size={12} /> : <TrendingUp size={12} />}
                   {stat.trend}
                 </span>
               )}
@@ -154,8 +154,15 @@ export const DashboardPage: React.FC = () => {
             <div className={`p-3 rounded-xl ${stat.bg} ${stat.color}`}>
               <stat.icon size={20} />
             </div>
-            <div>
-              <p className="text-slate-500 text-xs font-medium">{stat.label}</p>
+            <div className="flex-1">
+              <div className="flex justify-between items-start">
+                <p className="text-slate-500 text-xs font-medium">{stat.label}</p>
+                {stat.trend && (
+                  <span className={`text-[10px] font-bold ${stat.trend.startsWith('-') ? 'text-red-500' : 'text-green-600'}`}>
+                    {stat.trend}
+                  </span>
+                )}
+              </div>
               <h3 className="text-xl font-bold text-slate-900">{stat.value}</h3>
             </div>
           </motion.div>

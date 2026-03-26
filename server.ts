@@ -884,35 +884,89 @@ async function startServer() {
 
   app.get("/api/stats", async (req, res) => {
     try {
-      // 1. Basic Stats
+      const { period } = req.query;
+      let interval = "7 days";
+      let prevInterval = "14 days";
+      let dateFormat = "Dy";
+      let dateTrunc = "day";
+
+      if (period === "Today") {
+        interval = "1 day";
+        prevInterval = "2 days";
+        dateFormat = "HH:00";
+        dateTrunc = "hour";
+      } else if (period === "This Month") {
+        interval = "30 days";
+        prevInterval = "60 days";
+        dateFormat = "DD/MM";
+        dateTrunc = "day";
+      } else if (period === "All Time") {
+        interval = "10 years";
+        prevInterval = "20 years";
+        dateFormat = "Mon YY";
+        dateTrunc = "month";
+      }
+
+      // 1. Basic Stats with Trends
       const messageStats = await query(`
+        WITH current_stats AS (
+          SELECT 
+            COUNT(*)::int as total,
+            COUNT(*) FILTER (WHERE direction = 'incoming')::int as incoming,
+            COUNT(*) FILTER (WHERE direction = 'outgoing')::int as outgoing,
+            COUNT(*) FILTER (WHERE is_ai_reply = TRUE)::int as ai
+          FROM messages
+          WHERE created_at > NOW() - INTERVAL '${interval}'
+        ),
+        prev_stats AS (
+          SELECT 
+            COUNT(*)::int as total,
+            COUNT(*) FILTER (WHERE direction = 'incoming')::int as incoming,
+            COUNT(*) FILTER (WHERE direction = 'outgoing')::int as outgoing,
+            COUNT(*) FILTER (WHERE is_ai_reply = TRUE)::int as ai
+          FROM messages
+          WHERE created_at BETWEEN NOW() - INTERVAL '${prevInterval}' AND NOW() - INTERVAL '${interval}'
+        )
         SELECT 
-          COUNT(*)::int as total,
-          COUNT(*) FILTER (WHERE direction = 'incoming')::int as incoming,
-          COUNT(*) FILTER (WHERE direction = 'outgoing')::int as outgoing,
-          COUNT(*) FILTER (WHERE is_ai_reply = TRUE)::int as ai
-        FROM messages
+          c.*,
+          CASE WHEN p.total > 0 THEN ROUND(((c.total - p.total)::numeric / p.total) * 100) ELSE 0 END as total_trend,
+          CASE WHEN p.incoming > 0 THEN ROUND(((c.incoming - p.incoming)::numeric / p.incoming) * 100) ELSE 0 END as incoming_trend,
+          CASE WHEN p.outgoing > 0 THEN ROUND(((c.outgoing - p.outgoing)::numeric / p.outgoing) * 100) ELSE 0 END as outgoing_trend
+        FROM current_stats c, prev_stats p
       `);
 
       const contactStats = await query(`
+        WITH current_contacts AS (
+          SELECT 
+            COUNT(*)::int as total,
+            COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '24 hours')::int as new_24h,
+            COUNT(*) FILTER (WHERE status = 'converted')::int as converted,
+            COUNT(*) FILTER (WHERE human_takeover = TRUE)::int as human_takeover
+          FROM contacts
+          WHERE created_at > NOW() - INTERVAL '${interval}' OR '${period}' = 'All Time'
+        ),
+        prev_contacts AS (
+          SELECT 
+            COUNT(*)::int as total
+          FROM contacts
+          WHERE created_at BETWEEN NOW() - INTERVAL '${prevInterval}' AND NOW() - INTERVAL '${interval}'
+        )
         SELECT 
-          COUNT(*)::int as total,
-          COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '24 hours')::int as new_24h,
-          COUNT(*) FILTER (WHERE status = 'converted')::int as converted,
-          COUNT(*) FILTER (WHERE human_takeover = TRUE)::int as human_takeover
-        FROM contacts
+          c.*,
+          CASE WHEN p.total > 0 THEN ROUND(((c.total - p.total)::numeric / p.total) * 100) ELSE 0 END as total_trend
+        FROM current_contacts c, prev_contacts p
       `);
 
-      // 2. Bar Chart Data (Last 7 days)
+      // 2. Bar Chart Data
       const barData = await query(`
         SELECT 
-          TO_CHAR(created_at, 'Dy') as name,
+          TO_CHAR(created_at, '${dateFormat}') as name,
           COUNT(*) FILTER (WHERE direction = 'incoming')::int as incoming,
           COUNT(*) FILTER (WHERE direction = 'outgoing')::int as outgoing,
           COUNT(*) FILTER (WHERE is_ai_reply = TRUE)::int as ai,
-          DATE_TRUNC('day', created_at) as day_order
+          DATE_TRUNC('${dateTrunc}', created_at) as day_order
         FROM messages
-        WHERE created_at > NOW() - INTERVAL '7 days'
+        WHERE created_at > NOW() - INTERVAL '${interval}'
         GROUP BY name, day_order
         ORDER BY day_order ASC
       `);
@@ -923,6 +977,7 @@ async function startServer() {
           status as name,
           COUNT(*)::int as value
         FROM contacts
+        WHERE created_at > NOW() - INTERVAL '${interval}' OR '${period}' = 'All Time'
         GROUP BY status
       `);
 
@@ -932,13 +987,13 @@ async function startServer() {
           CASE WHEN is_ai_reply THEN 'AI Replies' ELSE 'Human Replies' END as name,
           COUNT(*)::int as value
         FROM messages
-        WHERE direction = 'outgoing'
+        WHERE direction = 'outgoing' AND (created_at > NOW() - INTERVAL '${interval}' OR '${period}' = 'All Time')
         GROUP BY name
       `);
 
       res.json({
-        messages: messageStats.rows[0],
-        contacts: contactStats.rows[0],
+        messages: messageStats.rows[0] || { total: 0, incoming: 0, outgoing: 0, ai: 0, total_trend: 0, incoming_trend: 0, outgoing_trend: 0 },
+        contacts: contactStats.rows[0] || { total: 0, new_24h: 0, converted: 0, human_takeover: 0 },
         barData: barData.rows,
         pieData: pieData.rows,
         donutData: donutData.rows
