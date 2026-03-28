@@ -139,8 +139,7 @@ export const ManageVehiclesPage: React.FC = () => {
     'Supercars',
     'Minivan',
     'Passenger Van',
-    'Hybrid',
-    'Cars'
+    'Hybrid Cars'
   ];
 
   const toggleFleetType = (type: string) => {
