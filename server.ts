@@ -192,18 +192,18 @@ async function startServer() {
             `INSERT INTO fleet_stock (
               vehicle_id, vehicle_make, vehicle_model, vehicle_year, 
               fleet_type, vehicle_image_url, car_description, 
-              day_price, week_price, month_price, 
+              special_day_price, daily_price, week_price, month_price, 
               milage_limit, extra_km_charge, car_features
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
             ON CONFLICT (vehicle_id) DO UPDATE SET
               vehicle_make = $2, vehicle_model = $3, vehicle_year = $4,
               fleet_type = $5, vehicle_image_url = $6, car_description = $7,
-              day_price = $8, week_price = $9, month_price = $10,
-              milage_limit = $11, extra_km_charge = $12, car_features = $13`,
+              special_day_price = $8, daily_price = $9, week_price = $10, month_price = $11,
+              milage_limit = $12, extra_km_charge = $13, car_features = $14`,
             [
               item.vehicle_id, item.vehicle_make, item.vehicle_model, item.vehicle_year, 
               item.fleet_type, item.vehicle_image_url, item.car_description, 
-              item.day_price, item.week_price, item.month_price, 
+              item.special_day_price || item.day_price, item.daily_price, item.week_price, item.month_price, 
               item.milage_limit, item.extra_km_charge, item.car_features
             ]
           );
@@ -274,36 +274,38 @@ async function startServer() {
       const { 
         vehicle_id, vehicle_make, vehicle_model, vehicle_year, 
         fleet_type, vehicle_image_url, vehicle_images, car_description, 
-        day_price, week_price, month_price, 
+        special_day_price, daily_price, week_price, month_price, 
         milage_limit, extra_km_charge, car_features,
-        deposit_amount
+        deposit_amount, offer
       } = req.body;
       
       // Handle both column names
       const finalDeposit = deposit_amount ?? req.body['deposit - amount'] ?? 3000;
       const finalImages = vehicle_images || [];
+      const finalSpecialDayPrice = special_day_price ?? req.body.day_price;
+      const finalOffer = offer === true || offer === 'true';
 
       const result = await query(
         `INSERT INTO fleet_stock (
           vehicle_id, vehicle_make, vehicle_model, vehicle_year, 
           fleet_type, vehicle_image_url, vehicle_images, car_description, 
-          day_price, week_price, month_price, 
+          special_day_price, daily_price, week_price, month_price, 
           milage_limit, extra_km_charge, car_features,
-          deposit_amount
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+          deposit_amount, offer
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
         ON CONFLICT (vehicle_id) DO UPDATE SET
           vehicle_make = $2, vehicle_model = $3, vehicle_year = $4,
           fleet_type = $5, vehicle_image_url = $6, vehicle_images = $7, car_description = $8,
-          day_price = $9, week_price = $10, month_price = $11,
-          milage_limit = $12, extra_km_charge = $13, car_features = $14,
-          deposit_amount = $15
+          special_day_price = $9, daily_price = $10, week_price = $11, month_price = $12,
+          milage_limit = $13, extra_km_charge = $14, car_features = $15,
+          deposit_amount = $16, offer = $17
         RETURNING *`,
         [
           vehicle_id || `v-${Date.now()}`, vehicle_make, vehicle_model, vehicle_year, 
           fleet_type, vehicle_image_url, JSON.stringify(finalImages), car_description, 
-          day_price, week_price, month_price, 
+          finalSpecialDayPrice, daily_price, week_price, month_price, 
           milage_limit, extra_km_charge, car_features,
-          finalDeposit
+          finalDeposit, finalOffer
         ]
       );
       res.json(result.rows[0]);

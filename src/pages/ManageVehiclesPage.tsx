@@ -9,7 +9,6 @@ import {
   Loader2, 
   Car, 
   Image as ImageIcon,
-  DollarSign,
   Calendar,
   Info,
   CheckCircle2,
@@ -30,13 +29,15 @@ interface Vehicle {
   vehicle_image_url: string;
   vehicle_images?: string[];
   car_description: string;
-  day_price: number;
+  special_day_price: number;
+  daily_price: number;
   week_price: number;
   month_price: number;
   milage_limit: number;
   extra_km_charge: number;
   car_features: string;
   deposit_amount: number;
+  offer: boolean;
   created_at?: string;
 }
 
@@ -56,13 +57,15 @@ export const ManageVehiclesPage: React.FC = () => {
     vehicle_image_url: '',
     vehicle_images: [],
     car_description: '',
-    day_price: 0,
+    special_day_price: 0,
+    daily_price: 0,
     week_price: 0,
     month_price: 0,
     milage_limit: 250,
     extra_km_charge: 5,
     car_features: '',
-    deposit_amount: 3000
+    deposit_amount: 3000,
+    offer: false
   });
 
   const [uploading, setUploading] = useState(false);
@@ -122,7 +125,23 @@ export const ManageVehiclesPage: React.FC = () => {
     multiple: true
   });
 
-  const FLEET_TYPES = ['SUV', 'Luxury', 'Sports', 'Economy', 'Convertible', 'Sedan', 'Electric'];
+  const FLEET_TYPES = [
+    'Compact SUV',
+    'Mid-size SUV',
+    'Full-size SUV',
+    'Luxury SUV',
+    'Economy Sedan',
+    'Compact Sedan',
+    'Mid-Size Sedan',
+    'Full-size Sedan',
+    'Sports Cars',
+    'Convertibles',
+    'Supercars',
+    'Minivan',
+    'Passenger Van',
+    'Hybrid',
+    'Cars'
+  ];
 
   const toggleFleetType = (type: string) => {
     const currentTypes = formData.fleet_type ? formData.fleet_type.split(',').map(t => t.trim()) : [];
@@ -149,7 +168,10 @@ export const ManageVehiclesPage: React.FC = () => {
       // Map data to handle potential 'deposit - amount' column name
       const mappedData = (data || []).map((v: any) => ({
         ...v,
+        special_day_price: v.special_day_price ?? v.day_price ?? 0,
+        daily_price: v.daily_price ?? 0,
         deposit_amount: v.deposit_amount ?? v['deposit - amount'] ?? 3000,
+        offer: v.offer === true || v.offer === 'true',
         vehicle_images: typeof v.vehicle_images === 'string' ? JSON.parse(v.vehicle_images) : (v.vehicle_images || [])
       }));
       
@@ -178,13 +200,15 @@ export const ManageVehiclesPage: React.FC = () => {
         vehicle_image_url: '',
         vehicle_images: [],
         car_description: '',
-        day_price: 0,
+        special_day_price: 0,
+        daily_price: 0,
         week_price: 0,
         month_price: 0,
         milage_limit: 250,
         extra_km_charge: 5,
         car_features: '',
-        deposit_amount: 3000
+        deposit_amount: 3000,
+        offer: false
       });
     }
     setIsModalOpen(true);
@@ -283,8 +307,11 @@ export const ManageVehiclesPage: React.FC = () => {
               <tr className="bg-slate-50/50">
                 <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Vehicle</th>
                 <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Type</th>
-                <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pricing (Day)</th>
+                <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Special Price (Day)</th>
+                <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Actual Price (Day)</th>
+                <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pricing (Week)</th>
                 <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pricing (Month)</th>
+                <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Offer</th>
                 <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</th>
                 <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
               </tr>
@@ -340,12 +367,35 @@ export const ManageVehiclesPage: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-8 py-5">
-                      <p className="font-bold text-slate-900">AED {vehicle.day_price}</p>
-                      <p className="text-[10px] text-slate-400 uppercase font-bold">Per Day</p>
+                      <p className="font-bold text-slate-900">AED {vehicle.special_day_price}</p>
+                      <p className="text-[10px] text-slate-400 uppercase font-bold">Intro Rate</p>
+                    </td>
+                    <td className="px-8 py-5">
+                      <p className="font-bold text-slate-900">AED {vehicle.daily_price}</p>
+                      <p className="text-[10px] text-slate-400 uppercase font-bold">Actual Rate</p>
+                    </td>
+                    <td className="px-8 py-5">
+                      <p className="font-bold text-slate-900">AED {vehicle.week_price}</p>
+                      <p className="text-[10px] text-slate-400 uppercase font-bold">
+                        AED {Math.round(vehicle.week_price / 7)} / Day
+                      </p>
                     </td>
                     <td className="px-8 py-5">
                       <p className="font-bold text-slate-900">AED {vehicle.month_price}</p>
-                      <p className="text-[10px] text-slate-400 uppercase font-bold">Per Month</p>
+                      <p className="text-[10px] text-slate-400 uppercase font-bold">
+                        AED {Math.round(vehicle.month_price / 30)} / Day
+                      </p>
+                    </td>
+                    <td className="px-8 py-5">
+                      {vehicle.offer ? (
+                        <span className="px-2 py-1 rounded-lg bg-orange-100 text-orange-600 text-[10px] font-bold uppercase tracking-wider">
+                          Active Offer
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">
+                          No Offer
+                        </span>
+                      )}
                     </td>
                     <td className="px-8 py-5">
                       <div className="flex items-center gap-2">
@@ -448,17 +498,27 @@ export const ManageVehiclesPage: React.FC = () => {
                 {/* Pricing */}
                 <div className="space-y-6">
                   <div className="flex items-center gap-2 text-[#2e7d32]">
-                    <DollarSign size={18} />
+                    <Info size={18} />
                     <h3 className="font-bold uppercase tracking-widest text-xs">Pricing Details (AED)</h3>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Day Price</label>
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Special Day Price</label>
                       <input 
                         type="number"
                         required
-                        value={formData.day_price}
-                        onChange={e => setFormData({...formData, day_price: Number(e.target.value)})}
+                        value={formData.special_day_price}
+                        onChange={e => setFormData({...formData, special_day_price: Number(e.target.value)})}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2e7d32]/50"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Actual Daily Price</label>
+                      <input 
+                        type="number"
+                        required
+                        value={formData.daily_price}
+                        onChange={e => setFormData({...formData, daily_price: Number(e.target.value)})}
                         className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2e7d32]/50"
                       />
                     </div>
@@ -481,6 +541,25 @@ export const ManageVehiclesPage: React.FC = () => {
                         onChange={e => setFormData({...formData, month_price: Number(e.target.value)})}
                         className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2e7d32]/50"
                       />
+                    </div>
+                    <div className="md:col-span-2">
+                      <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        <div>
+                          <p className="text-sm font-bold text-slate-900">Special Offer</p>
+                          <p className="text-xs text-slate-500">Show offer badge on this vehicle</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, offer: !formData.offer })}
+                          className={`w-12 h-6 rounded-full transition-all relative ${
+                            formData.offer ? 'bg-[#2e7d32]' : 'bg-slate-300'
+                          }`}
+                        >
+                          <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${
+                            formData.offer ? 'left-7' : 'left-1'
+                          }`} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>

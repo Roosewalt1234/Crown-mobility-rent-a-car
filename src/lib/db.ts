@@ -97,13 +97,15 @@ export const initDb = async () => {
         vehicle_image_url TEXT,
         vehicle_images JSONB DEFAULT '[]',
         car_description TEXT,
-        day_price NUMERIC,
+        special_day_price NUMERIC,
+        daily_price NUMERIC,
         week_price NUMERIC,
         month_price NUMERIC,
         milage_limit NUMERIC,
         extra_km_charge NUMERIC,
         car_features TEXT,
         deposit_amount NUMERIC,
+        offer BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -111,6 +113,20 @@ export const initDb = async () => {
     // Migration: Add vehicle_images column if it doesn't exist
     await query(`
       ALTER TABLE fleet_stock ADD COLUMN IF NOT EXISTS vehicle_images JSONB DEFAULT '[]';
+      ALTER TABLE fleet_stock ADD COLUMN IF NOT EXISTS week_price NUMERIC;
+      ALTER TABLE fleet_stock ADD COLUMN IF NOT EXISTS month_price NUMERIC;
+      ALTER TABLE fleet_stock ADD COLUMN IF NOT EXISTS daily_price NUMERIC;
+      ALTER TABLE fleet_stock ADD COLUMN IF NOT EXISTS offer BOOLEAN DEFAULT FALSE;
+      
+      -- Rename day_price to special_day_price if it exists
+      DO $$ 
+      BEGIN 
+        IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='fleet_stock' AND column_name='day_price') THEN
+          ALTER TABLE fleet_stock RENAME COLUMN day_price TO special_day_price;
+        ELSIF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='fleet_stock' AND column_name='special_day_price') THEN
+          ALTER TABLE fleet_stock ADD COLUMN special_day_price NUMERIC;
+        END IF;
+      END $$;
     `).catch(() => {});
 
     await query(`

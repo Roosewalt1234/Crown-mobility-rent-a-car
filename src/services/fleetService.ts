@@ -18,7 +18,7 @@ export const fleetService = {
         year: Number(item.vehicle_year),
         region: 'GCC',
         pricing: {
-          day: { original: Math.round(Number(item.day_price) * 1.2), current: Number(item.day_price) },
+          day: { original: Math.round(Number(item.special_day_price || item.day_price) * 1.2), current: Number(item.special_day_price || item.day_price) },
           week: { original: Math.round(Number(item.week_price) * 1.2), current: Number(item.week_price) },
           month: { original: Math.round(Number(item.month_price) * 1.2), current: Number(item.month_price) }
         },

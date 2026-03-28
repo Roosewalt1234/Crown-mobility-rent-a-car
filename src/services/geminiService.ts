@@ -99,9 +99,9 @@ export async function chatWithAI(messages: Message[], fleetData?: any[], kbData?
         const allImages = [car.vehicle_image_url, ...images].filter(Boolean);
         
         return `- ${car.vehicle_make} ${car.vehicle_model} (${car.vehicle_year}): ` +
-        `ID: ${car.vehicle_id}, Price: AED ${car.day_price}/day, AED ${car.week_price}/week, AED ${car.month_price}/month. ` +
+        `ID: ${car.vehicle_id}, Special Price: AED ${car.special_day_price || car.day_price}/day, Actual Price: AED ${car.daily_price}/day, Weekly: AED ${car.week_price}/week, Monthly: AED ${car.month_price}/month. ` +
         `Type: ${car.fleet_type}, Color: ${car.vehicle_color}, Mileage Limit: ${car.milage_limit}km, ` +
-        `Extra KM: AED ${car.extra_km_charge}, Deposit: AED ${car.deposit_amount || car['deposit - amount'] || 3000}. ` +
+        `Extra KM Charge: AED ${car.extra_km_charge}, Deposit: AED ${car.deposit_amount || car['deposit - amount'] || 3000}. ` +
         `Features: ${car.car_features}. Description: ${car.car_description}. ` +
         `Images Available: ${allImages.length} images. URLs: ${allImages.join(', ')}`;
       }).join('\n');

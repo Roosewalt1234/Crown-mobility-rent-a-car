@@ -90,9 +90,9 @@ export const CarCard: React.FC<CarCardProps> = ({ car }) => {
           {/* Pricing Grid */}
           <div className="grid grid-cols-3 gap-1.5 bg-gray-50/50 p-1 rounded-xl border border-gray-100">
             {[
-              { label: 'day', price: car.pricing.day, active: true },
-              { label: 'week', price: car.pricing.week, active: false },
-              { label: 'month', price: car.pricing.month, active: false }
+              { label: 'day', price: car.pricing.day, active: true, actual: null },
+              { label: 'week', price: car.pricing.week, active: false, actual: Math.round(car.pricing.week.current / 7) },
+              { label: 'month', price: car.pricing.month, active: false, actual: Math.round(car.pricing.month.current / 30) }
             ].map((plan) => (
               <div 
                 key={plan.label}
@@ -109,6 +109,16 @@ export const CarCard: React.FC<CarCardProps> = ({ car }) => {
                 <p className="text-[9px] font-bold text-[#FF6321] mt-1">
                   / {plan.label}
                 </p>
+                {plan.actual && (
+                  <p className="text-[8px] font-bold text-gray-400 mt-1 uppercase tracking-tighter">
+                    AED {plan.actual}/day
+                  </p>
+                )}
+                {plan.label === 'day' && (
+                  <p className="text-[8px] font-bold text-gray-400 mt-1 uppercase tracking-tighter">
+                    Intro Rate
+                  </p>
+                )}
               </div>
             ))}
           </div>

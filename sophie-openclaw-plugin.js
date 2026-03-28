@@ -97,7 +97,7 @@ async function getFleetData() {
     const res = await client.query("SELECT * FROM fleet_stock ORDER BY created_at DESC");
     return res.rows.map(car => {
       return `- ${car.vehicle_make} ${car.vehicle_model} (${car.vehicle_year}): ` +
-             `ID: ${car.vehicle_id}, Price: AED ${car.day_price}/day, Deposit: AED ${car.deposit_amount || 3000}. ` +
+             `ID: ${car.vehicle_id}, Special Price: AED ${car.special_day_price || car.day_price}/day, Actual Price: AED ${car.daily_price}/day, Deposit: AED ${car.deposit_amount || 3000}. ` +
              `Features: ${car.car_features}.`;
     }).join('\n');
   } catch (err) {
