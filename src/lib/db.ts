@@ -32,6 +32,7 @@ export const initDb = async () => {
         unread_count INTEGER DEFAULT 0,
         status TEXT DEFAULT 'new',
         human_takeover BOOLEAN DEFAULT FALSE,
+        is_hot BOOLEAN DEFAULT FALSE,
         revive_sent_at TIMESTAMP WITH TIME ZONE,
         manager_notified_at TIMESTAMP WITH TIME ZONE,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -40,6 +41,7 @@ export const initDb = async () => {
     
     // Migration: Add columns to contacts if they don't exist
     await query(`
+      ALTER TABLE contacts ADD COLUMN IF NOT EXISTS is_hot BOOLEAN DEFAULT FALSE;
       ALTER TABLE contacts ADD COLUMN IF NOT EXISTS revive_sent_at TIMESTAMP WITH TIME ZONE;
       ALTER TABLE contacts ADD COLUMN IF NOT EXISTS manager_notified_at TIMESTAMP WITH TIME ZONE;
       ALTER TABLE contacts ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;

@@ -15,7 +15,8 @@ import {
   ToggleRight,
   MessageSquare,
   Sparkles,
-  Zap
+  Zap,
+  Flame
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../contexts/AuthContext';
@@ -31,6 +32,7 @@ interface Contact {
   unread_count: number;
   status: 'new' | 'active' | 'converted';
   human_takeover: boolean;
+  is_hot: boolean;
 }
 
 interface Message {
@@ -46,9 +48,9 @@ interface Message {
 }
 
 const MOCK_CONTACTS: Contact[] = [
-  { id: '1', chat_id: '123@c.us', contact_name: 'Ahmed Hassan', contact_phone: '+971 50 123 4567', last_message_preview: 'I want to rent the G63 for 3 days.', last_message_at: new Date().toISOString(), unread_count: 2, status: 'active', human_takeover: false },
-  { id: '2', chat_id: '456@c.us', contact_name: 'Sarah Miller', contact_phone: '+971 52 987 6543', last_message_preview: 'Thank you for the information!', last_message_at: new Date(Date.now() - 3600000).toISOString(), unread_count: 0, status: 'converted', human_takeover: true },
-  { id: '3', chat_id: '789@c.us', contact_name: 'John Doe', contact_phone: '+44 7700 900000', last_message_preview: 'What is the deposit for the Ferrari?', last_message_at: new Date(Date.now() - 86400000).toISOString(), unread_count: 0, status: 'new', human_takeover: false },
+  { id: '1', chat_id: '123@c.us', contact_name: 'Ahmed Hassan', contact_phone: '+971 50 123 4567', last_message_preview: 'I want to rent the G63 for 3 days.', last_message_at: new Date().toISOString(), unread_count: 2, status: 'active', human_takeover: false, is_hot: false },
+  { id: '2', chat_id: '456@c.us', contact_name: 'Sarah Miller', contact_phone: '+971 52 987 6543', last_message_preview: 'Thank you for the information!', last_message_at: new Date(Date.now() - 3600000).toISOString(), unread_count: 0, status: 'converted', human_takeover: true, is_hot: true },
+  { id: '3', chat_id: '789@c.us', contact_name: 'John Doe', contact_phone: '+44 7700 900000', last_message_preview: 'What is the deposit for the Ferrari?', last_message_at: new Date(Date.now() - 86400000).toISOString(), unread_count: 0, status: 'new', human_takeover: false, is_hot: false },
 ];
 
 const MOCK_MESSAGES: Message[] = [
@@ -214,6 +216,27 @@ export const ChatsPage: React.FC<{ mode?: 'ai' | 'manual' | 'all' }> = ({ mode =
     }
   };
 
+  const toggleHot = async (contactId: string, currentVal: boolean) => {
+    try {
+      const res = await fetch(`/api/contacts/${contactId}/hot`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isHot: !currentVal })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setContacts(contacts.map(c => c.chat_id === contactId ? { ...c, is_hot: !currentVal } : c));
+        if (selectedContact?.chat_id === contactId) {
+          setSelectedContact({ ...selectedContact, is_hot: !currentVal });
+        }
+        toast.success(!currentVal ? 'Marked as Hot! 🔥' : 'Removed Hot status');
+      }
+    } catch (err) {
+      console.error('Error toggling hot status:', err);
+      toast.error('Failed to update status');
+    }
+  };
+
   const handleRevive = async () => {
     if (!selectedContact) return;
     setIsReviving(true);
@@ -325,8 +348,9 @@ export const ChatsPage: React.FC<{ mode?: 'ai' | 'manual' | 'all' }> = ({ mode =
                   </div>
                   <div className="flex-1 text-left min-w-0">
                       <div className="flex justify-between items-center mb-0.5">
-                        <h4 className="font-bold text-slate-900 truncate">
+                        <h4 className="font-bold text-slate-900 truncate flex items-center gap-1.5">
                           {contact.contact_phone || contact.chat_id.split('@')[0]}
+                          {contact.is_hot && <Flame size={14} className="text-red-500 fill-red-500 animate-pulse" />}
                         </h4>
                         <span className="text-[10px] text-slate-400 font-medium">
                           {new Date(contact.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -387,8 +411,9 @@ export const ChatsPage: React.FC<{ mode?: 'ai' | 'manual' | 'all' }> = ({ mode =
                       : selectedContact.contact_phone || selectedContact.chat_id.split('@')[0]}
                   </h3>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-400 truncate">
+                    <span className="text-xs text-slate-400 truncate flex items-center gap-1">
                       {selectedContact.contact_phone || selectedContact.chat_id}
+                      {selectedContact.is_hot && <Flame size={12} className="text-red-500 fill-red-500" />}
                     </span>
                     <span className="w-1 h-1 rounded-full bg-slate-300 shrink-0" />
                     <span className={`text-[10px] font-bold uppercase tracking-widest shrink-0 ${
@@ -437,6 +462,18 @@ export const ChatsPage: React.FC<{ mode?: 'ai' | 'manual' | 'all' }> = ({ mode =
                 >
                   <Sparkles size={14} className={isReviving ? 'animate-spin' : ''} />
                   <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider hidden sm:inline">Revive</span>
+                </button>
+
+                <button 
+                  onClick={() => toggleHot(selectedContact.chat_id, selectedContact.is_hot)}
+                  className={`p-2 rounded-full transition-all ${
+                    selectedContact.is_hot 
+                      ? 'bg-red-50 text-red-500 border border-red-100' 
+                      : 'text-slate-400 hover:text-red-500 hover:bg-red-50'
+                  }`}
+                  title={selectedContact.is_hot ? "Remove Hot status" : "Mark as Hot"}
+                >
+                  <Flame size={20} className={selectedContact.is_hot ? 'fill-red-500 animate-pulse' : ''} />
                 </button>
 
                 <div className="flex items-center gap-1">

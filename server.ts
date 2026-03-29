@@ -258,6 +258,22 @@ async function startServer() {
     }
   });
 
+  app.post("/api/contacts/:chatId/hot", async (req, res) => {
+    try {
+      const { chatId } = req.params;
+      const { isHot } = req.body;
+      const normalizedId = normalizeChatId(chatId);
+      await query(
+        "UPDATE contacts SET is_hot = $1 WHERE chat_id = $2",
+        [isHot, normalizedId]
+      );
+      res.json({ success: true, is_hot: isHot });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Fleet API
   app.get("/api/fleet", async (req, res) => {
     try {
