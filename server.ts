@@ -193,18 +193,18 @@ async function startServer() {
               vehicle_id, vehicle_make, vehicle_model, vehicle_year, 
               fleet_type, vehicle_image_url, car_description, 
               special_day_price, daily_price, week_price, month_price, 
-              milage_limit, extra_km_charge, car_features
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+              milage_limit, extra_km_charge, car_features, offer_name
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
             ON CONFLICT (vehicle_id) DO UPDATE SET
               vehicle_make = $2, vehicle_model = $3, vehicle_year = $4,
               fleet_type = $5, vehicle_image_url = $6, car_description = $7,
               special_day_price = $8, daily_price = $9, week_price = $10, month_price = $11,
-              milage_limit = $12, extra_km_charge = $13, car_features = $14`,
+              milage_limit = $12, extra_km_charge = $13, car_features = $14, offer_name = $15`,
             [
               item.vehicle_id, item.vehicle_make, item.vehicle_model, item.vehicle_year, 
               item.fleet_type, item.vehicle_image_url, item.car_description, 
               item.special_day_price || item.day_price, item.daily_price, item.week_price, item.month_price, 
-              item.milage_limit, item.extra_km_charge, item.car_features
+              item.milage_limit, item.extra_km_charge, item.car_features, item.offer_name
             ]
           );
         }
@@ -276,7 +276,7 @@ async function startServer() {
         fleet_type, vehicle_image_url, vehicle_images, car_description, 
         special_day_price, daily_price, week_price, month_price, 
         milage_limit, extra_km_charge, car_features,
-        deposit_amount, offer
+        deposit_amount, offer, offer_name
       } = req.body;
       
       // Handle both column names
@@ -284,6 +284,7 @@ async function startServer() {
       const finalImages = vehicle_images || [];
       const finalSpecialDayPrice = special_day_price ?? req.body.day_price;
       const finalOffer = offer === true || offer === 'true';
+      const finalOfferName = finalOffer ? (req.body.offer_name || null) : null;
 
       const result = await query(
         `INSERT INTO fleet_stock (
@@ -291,21 +292,21 @@ async function startServer() {
           fleet_type, vehicle_image_url, vehicle_images, car_description, 
           special_day_price, daily_price, week_price, month_price, 
           milage_limit, extra_km_charge, car_features,
-          deposit_amount, offer
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+          deposit_amount, offer, offer_name
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
         ON CONFLICT (vehicle_id) DO UPDATE SET
           vehicle_make = $2, vehicle_model = $3, vehicle_year = $4,
           fleet_type = $5, vehicle_image_url = $6, vehicle_images = $7, car_description = $8,
           special_day_price = $9, daily_price = $10, week_price = $11, month_price = $12,
           milage_limit = $13, extra_km_charge = $14, car_features = $15,
-          deposit_amount = $16, offer = $17
+          deposit_amount = $16, offer = $17, offer_name = $18
         RETURNING *`,
         [
           vehicle_id || `v-${Date.now()}`, vehicle_make, vehicle_model, vehicle_year, 
           fleet_type, vehicle_image_url, JSON.stringify(finalImages), car_description, 
           finalSpecialDayPrice, daily_price, week_price, month_price, 
           milage_limit, extra_km_charge, car_features,
-          finalDeposit, finalOffer
+          finalDeposit, finalOffer, finalOfferName
         ]
       );
       res.json(result.rows[0]);
@@ -565,6 +566,12 @@ app.post("/api/messages", async (req, res) => {
 
             console.log(`[AI-DEBUG] Chat ID: ${chat_id}, isHumanTakeover: ${isHumanTakeover}`);
 
+            // If human takeover is active, stay completely silent
+            if (isHumanTakeover) {
+              console.log(`[AI-DEBUG] Human takeover is ON for ${chat_id}. Staying silent.`);
+              return;
+            }
+
             // 2. Get context (last 15 messages)
             const historyResult = await query(
               "SELECT body, direction, is_ai_reply, media_url, media_type FROM messages WHERE chat_id = $1 ORDER BY created_at DESC LIMIT 15",
@@ -592,19 +599,6 @@ app.post("/api/messages", async (req, res) => {
             console.log(`[AI-DEBUG] Calling Gemini AI...`);
             const aiResponse = await chatWithAI(history as any, fleetData, kbData);
 
-            // Handle Human Takeover logic
-            if (isHumanTakeover) {
-              if (aiResponse && aiResponse.escalated) {
-                // If already in human mode and AI thinks it needs escalation, send "Message is taken care"
-                aiResponse.text = "Message is taken care. 😊";
-              } else {
-                // If already in human mode and AI doesn't see escalation, stay silent
-                console.log(`[AI-DEBUG] Human takeover is ON and AI did not escalate. Staying silent.`);
-                return;
-              }
-            }
-
-            // If AI failed (returned fallback message), don't send it automatically
             if (aiResponse && aiResponse.text && aiResponse.text.includes("trouble connecting")) {
               console.warn(`[AI-DEBUG] Skipping auto-reply for ${chat_id} due to AI connection error.`);
               return;

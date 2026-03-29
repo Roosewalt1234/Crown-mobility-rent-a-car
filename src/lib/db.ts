@@ -117,6 +117,7 @@ export const initDb = async () => {
       ALTER TABLE fleet_stock ADD COLUMN IF NOT EXISTS month_price NUMERIC;
       ALTER TABLE fleet_stock ADD COLUMN IF NOT EXISTS daily_price NUMERIC;
       ALTER TABLE fleet_stock ADD COLUMN IF NOT EXISTS offer BOOLEAN DEFAULT FALSE;
+      ALTER TABLE fleet_stock ADD COLUMN IF NOT EXISTS offer_name TEXT;
       
       -- Rename day_price to special_day_price if it exists
       DO $$ 

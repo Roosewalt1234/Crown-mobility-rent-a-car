@@ -38,6 +38,7 @@ interface Vehicle {
   car_features: string;
   deposit_amount: number;
   offer: boolean;
+  offer_name?: string;
   created_at?: string;
 }
 
@@ -65,7 +66,8 @@ export const ManageVehiclesPage: React.FC = () => {
     extra_km_charge: 5,
     car_features: '',
     deposit_amount: 3000,
-    offer: false
+    offer: false,
+    offer_name: ''
   });
 
   const [uploading, setUploading] = useState(false);
@@ -171,6 +173,7 @@ export const ManageVehiclesPage: React.FC = () => {
         daily_price: v.daily_price ?? 0,
         deposit_amount: v.deposit_amount ?? v['deposit - amount'] ?? 3000,
         offer: v.offer === true || v.offer === 'true',
+        offer_name: v.offer_name || '',
         vehicle_images: typeof v.vehicle_images === 'string' ? JSON.parse(v.vehicle_images) : (v.vehicle_images || [])
       }));
       
@@ -207,7 +210,8 @@ export const ManageVehiclesPage: React.FC = () => {
         extra_km_charge: 5,
         car_features: '',
         deposit_amount: 3000,
-        offer: false
+        offer: false,
+        offer_name: ''
       });
     }
     setIsModalOpen(true);
@@ -549,7 +553,7 @@ export const ManageVehiclesPage: React.FC = () => {
                         </div>
                         <button
                           type="button"
-                          onClick={() => setFormData({ ...formData, offer: !formData.offer })}
+                          onClick={() => setFormData({ ...formData, offer: !formData.offer, offer_name: !formData.offer ? formData.offer_name : '' })}
                           className={`w-12 h-6 rounded-full transition-all relative ${
                             formData.offer ? 'bg-[#2e7d32]' : 'bg-slate-300'
                           }`}
@@ -560,6 +564,17 @@ export const ManageVehiclesPage: React.FC = () => {
                         </button>
                       </div>
                     </div>
+                    {formData.offer && (
+                      <div className="md:col-span-2 space-y-2">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Offer Name</label>
+                        <input 
+                          value={formData.offer_name}
+                          onChange={e => setFormData({...formData, offer_name: e.target.value})}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2e7d32]/50"
+                          placeholder="e.g. Ramadan Promo, Eid Offer..."
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
 
