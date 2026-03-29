@@ -363,7 +363,10 @@ async function startServer() {
     }
   });
 
-  app.post("/api/messages", async (req, res) => {
+  // Global map to track pending AI auto-replies for debouncing
+const pendingAiReplies = new Map<string, NodeJS.Timeout>();
+
+app.post("/api/messages", async (req, res) => {
     try {
       console.log("[API] Received POST /api/messages. Body:", JSON.stringify(req.body));
       
@@ -483,12 +486,27 @@ async function startServer() {
         });
       }
 
-      // 8. --- AI Auto-Reply Logic (Background) ---
+      // 8. --- AI Auto-Reply Logic (Background with Debouncing/Smart Grouping) ---
       if (direction === 'incoming' && !is_ai_reply) {
-        // Run AI logic in background without awaiting it for the HTTP response
-        (async () => {
+        // Skip AI for web users on the server side (handled by Chatbot.tsx)
+        if (chat_id.startsWith('user_')) {
+          console.log(`[AI-DEBUG] Web user message. Skipping server-side AI auto-reply.`);
+          return;
+        }
+
+        // Clear any existing timer for this chat_id
+        if (pendingAiReplies.has(chat_id)) {
+          console.log(`[AI-DEBUG] Clearing existing timer for ${chat_id} (Smart Grouping)`);
+          clearTimeout(pendingAiReplies.get(chat_id)!);
+        }
+
+        // Set a new timer (wait 5 seconds for more messages)
+        const timer = setTimeout(async () => {
           try {
-            console.log(`[AI-DEBUG] Starting background process for ${chat_id}`);
+            // Remove from pending map
+            pendingAiReplies.delete(chat_id);
+            
+            console.log(`[AI-DEBUG] Starting background process for ${chat_id} after debounce`);
             
             // 0. Check DND and Global Auto-Reply
             const settingsResult = await query("SELECT key, value FROM settings WHERE key IN ('dnd_config', 'general_config')");
@@ -511,12 +529,6 @@ async function startServer() {
 
             if (generalConfig && (generalConfig.autoReply === false || generalConfig.autoReply === 'false')) {
               console.log(`[AI-DEBUG] Global Auto-Reply is disabled. Skipping AI.`);
-              return;
-            }
-
-            // Skip AI for web users on the server side (handled by Chatbot.tsx)
-            if (chat_id.startsWith('user_')) {
-              console.log(`[AI-DEBUG] Web user message. Skipping server-side AI auto-reply.`);
               return;
             }
             
@@ -553,14 +565,9 @@ async function startServer() {
 
             console.log(`[AI-DEBUG] Chat ID: ${chat_id}, isHumanTakeover: ${isHumanTakeover}`);
 
-            if (isHumanTakeover) {
-              console.log(`[AI-DEBUG] Human takeover is ON for ${chat_id}. Skipping AI background process entirely.`);
-              return;
-            }
-
-            // 2. Get context (last 10 messages)
+            // 2. Get context (last 15 messages)
             const historyResult = await query(
-              "SELECT body, direction, is_ai_reply, media_url, media_type FROM messages WHERE chat_id = $1 ORDER BY created_at DESC LIMIT 10",
+              "SELECT body, direction, is_ai_reply, media_url, media_type FROM messages WHERE chat_id = $1 ORDER BY created_at DESC LIMIT 15",
               [chat_id]
             );
             
@@ -584,6 +591,18 @@ async function startServer() {
             // 5. Generate AI response
             console.log(`[AI-DEBUG] Calling Gemini AI...`);
             const aiResponse = await chatWithAI(history as any, fleetData, kbData);
+
+            // Handle Human Takeover logic
+            if (isHumanTakeover) {
+              if (aiResponse && aiResponse.escalated) {
+                // If already in human mode and AI thinks it needs escalation, send "Message is taken care"
+                aiResponse.text = "Message is taken care. 😊";
+              } else {
+                // If already in human mode and AI doesn't see escalation, stay silent
+                console.log(`[AI-DEBUG] Human takeover is ON and AI did not escalate. Staying silent.`);
+                return;
+              }
+            }
 
             // If AI failed (returned fallback message), don't send it automatically
             if (aiResponse && aiResponse.text && aiResponse.text.includes("trouble connecting")) {
@@ -689,7 +708,9 @@ async function startServer() {
           } catch (aiErr) {
             console.error("[AI-DEBUG] CRITICAL ERROR in background process:", aiErr);
           }
-        })();
+        }, 5000); // 5 second debounce
+
+        pendingAiReplies.set(chat_id, timer);
       }
     } catch (err) {
       console.error("[API] Error saving message:", err);
